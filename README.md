@@ -59,6 +59,25 @@ placeholder `<span>` with
 `<video src="videos/name.mp4" poster="videos/name.jpg" controls playsinline preload="none"></video>`.
 Keep files small (H.264 MP4, a few MB). Bump `?v=` on `styles.css` / `main.js` when they change.
 
+## Prospect pages (watch/)
+
+Each prospect gets a private page: `/watch/?id=<token>`. It loads `<token>.json` (see `watch/demo.json`):
+business name, logo, the date of the first email (`offerStart`), and four videos (widescreen and vertical,
+English and Spanish), each with its own Stripe checkout link, plus `packageCheckout` for the full set.
+Try it: `/watch/?id=demo`.
+
+**Offer:** 40% off for the 14 days of the email campaign (first email day 0, follow-ups days 3, 7 and 13;
+the day-13 email is "last chance"). The page ends the offer at midnight at the end of day 13.
+Prices live at the top of `watch/watch.js` (a prospect's JSON can override them):
+- during the offer: $149 per video, $499 for all four
+- after it: $249 per video, $829 for all four
+
+The page's countdown only changes what the page shows; the real price is whatever the Stripe link charges,
+so make the after-offer Stripe links separately when the time comes.
+
+To do: host prospects' JSON and preview videos in Firebase Storage (set `DATA_BASE` in `watch/watch.js`),
+use long random tokens, make the Stripe Payment Links, and deliver full-quality downloads after payment.
+
 ## Legal pages
 
 `privacy.html` and `terms.html` are plain-English starting drafts, not legal advice. Have them checked before launch.
