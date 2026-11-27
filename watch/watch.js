@@ -16,6 +16,8 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 const params = new URLSearchParams(location.search);
 const token = (window.PW_ID || params.get('id') || '').replace(/[^A-Za-z0-9_-]/g, '');
 const sessionId = (params.get('session_id') || '').replace(/[^A-Za-z0-9_]/g, '');
+const picked = new Set();   // videos ticked to buy together
+let data = null, pkgOn = false, pkgOffScreen = false;
 
 // Firebase callable functions over plain fetch (no SDK needed): POST {data}, answer {result} or {error}.
 async function call(name, data) {
@@ -39,7 +41,7 @@ function card(v, live, P) {
         ${v.paid
           ? `<span class="vid-paid">✓ Bought. We'll email your file.</span>`
           : `<p class="price small">${live ? `<s>${money(P.regular.single)}</s> ` : ''}<strong>${money(P.now.single)}</strong></p>
-             <button type="button" class="btn btn-ghost btn-small" data-buy="${esc(v.id)}" aria-label="Buy ${esc(v.title || 'this commercial')} for ${money(P.now.single)}">Buy this one</button>`}
+             <button type="button" class="btn btn-ghost btn-small pick" data-pick="${esc(v.id)}" aria-pressed="false" aria-label="Select ${esc(v.title || 'this commercial')} (${v.shape === 'tall' ? 'vertical' : 'widescreen'}), ${money(P.now.single)}">Select</button>`}
       </div>
     </div>`;
   if (v.composite) PWPlayer.mount(el.querySelector('.vid-frame'), v.composite);
@@ -69,43 +71,69 @@ function render(d) {
   }
 
   // the package: everything on the page, only while nothing has been bought one by one
-  const pkgOn = vids.length >= 2 && !anyPaid;
+  data = d; pkgOn = vids.length >= 2 && !anyPaid;
   $('pkg-wrap').hidden = !pkgOn;
   if (pkgOn) {
     $('pkg-title').textContent = `All ${vids.length} commercials`;
     $('pkg-desc').textContent = wide.length && tall.length ? `Every commercial on this page: ${wide.length} widescreen and ${tall.length} vertical, in one checkout.` : 'Every commercial on this page, in one checkout.';
     $('pkg-list').innerHTML = [wide.length && `${wide.length} × widescreen`, tall.length && `${tall.length} × vertical`, 'Full-quality files', 'Yours to keep'].filter(Boolean).map((x) => `<li>${x}</li>`).join('');
     $('pkg-now').textContent = money(P.now.pkg);
-    const oneByOne = P.now.single * vids.length;
-    if (live) { $('pkg-was').textContent = money(P.regular.pkg); $('pkg-save').textContent = `You save ${money(P.regular.pkg - P.now.pkg)} until the offer ends.`; }
-    else { $('pkg-was').textContent = ''; $('pkg-save').textContent = oneByOne > P.now.pkg ? `${money(oneByOne - P.now.pkg)} less than buying them one at a time.` : ''; }
-    $('bar-title').textContent = `All ${vids.length} commercials · ${money(P.now.pkg)}`;
-    $('bar-sub').textContent = live ? `Save ${money(P.regular.pkg - P.now.pkg)}` : 'One checkout';
+    const oneByOne = P.now.single * vids.length, saved = oneByOne - P.now.pkg;
+    $('pkg-was').textContent = saved > 0 ? money(oneByOne) : '';
+    $('pkg-each').textContent = `About ${money(Math.round(P.now.pkg / vids.length))} a video instead of ${money(P.now.single)}`;
+    $('pkg-save').textContent = saved > 0 ? `You save ${money(saved)} over buying them one at a time.` : '';
+  }
+  // above each group: what the same video costs inside the set
+  for (const tip of ['wide-tip', 'tall-tip']) {
+    $(tip).hidden = !pkgOn;
+    if (pkgOn) $(tip).innerHTML = `Select the ones you want, or <button type="button" class="linkbtn" data-buy="package">get all ${vids.length} for ${money(P.now.pkg)}</button> (about ${money(Math.round(P.now.pkg / vids.length))} each).`;
   }
 
   for (const [list, box, group] of [[wide, 'vids-wide', 'g-wide'], [tall, 'vids-tall', 'g-tall']]) {
     $(group).hidden = !list.length; $(box).innerHTML = '';
     for (const v of list) $(box).appendChild(card(v, live, P));
   }
-  for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => buy(b));
+  for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => buy(b, { item: b.dataset.buy }));
+  for (const b of document.querySelectorAll('[data-pick]')) b.addEventListener('click', () => toggle(b));
+  $('bar-picks').addEventListener('click', () => buy($('bar-picks'), { items: [...picked] }));
 
-  // the sticky "get the set" bar: only while the package card is scrolled off the top
-  const bar = $('bar');
-  if (pkgOn) {
-    document.body.classList.add('has-bar');
-    new IntersectionObserver(([en]) => {
-      const off = !en.isIntersecting && en.boundingClientRect.top < 0;
-      bar.classList.toggle('show', off); bar.setAttribute('aria-hidden', off ? 'false' : 'true');
-      bar.querySelector('button').tabIndex = off ? 0 : -1;
-    }).observe($('pkg'));
-  }
+  // the sticky bar: the picks and what the set would cost; with nothing picked, the set once its card is scrolled away
+  document.body.classList.add('has-bar');
+  if (pkgOn) new IntersectionObserver(([en]) => { pkgOffScreen = !en.isIntersecting && en.boundingClientRect.top < 0; bar(); }).observe($('pkg'));
   $('loading').hidden = true; $('app').hidden = false;
 }
 
-async function buy(b) {
+function toggle(b) {
+  const id = b.dataset.pick, on = !picked.has(id);
+  if (on) picked.add(id); else picked.delete(id);
+  b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '✓ Selected' : 'Select';
+  b.closest('.vid').classList.toggle('is-picked', on);
+  bar();
+}
+
+// The bar's words and buttons. When the picks cost as much as the set or more, only the set is offered (the server
+// charges the set price then too, so nobody pays more for fewer videos).
+function bar() {
+  const P = data.offer.now, n = picked.size, total = n * P.single, all = data.videos.length;
+  const better = pkgOn && total >= P.pkg, show = n > 0 || (pkgOn && pkgOffScreen);
+  const el = $('bar'), picks = $('bar-picks'), set = $('bar-set'), meter = $('bar-meter');
+  if (!n) { $('bar-title').textContent = `All ${all} commercials · ${money(P.pkg)}`; $('bar-sub').textContent = `Save ${money(Math.max(0, all * P.single - P.pkg))} over one at a time`; }
+  else if (better) { $('bar-title').textContent = `Get all ${all} for ${money(P.pkg)}`; $('bar-sub').textContent = `Less than the ${money(total)} your ${n} picks cost on their own`; }
+  else {
+    $('bar-title').textContent = `${n} selected · ${money(total)}`;
+    $('bar-sub').textContent = pkgOn ? `${money(P.pkg - total)} more gets all ${all}` : 'One checkout';
+  }
+  picks.hidden = !n || better; picks.textContent = `Buy ${n === 1 ? 'this one' : 'these ' + n}`;
+  set.hidden = !pkgOn; set.textContent = better ? `Get all ${all}` : `All ${all} · ${money(P.pkg)}`;
+  meter.hidden = !pkgOn || !n; meter.firstElementChild.style.width = Math.min(100, (total / P.pkg) * 100) + '%';
+  el.classList.toggle('show', show); el.setAttribute('aria-hidden', show ? 'false' : 'true');
+  for (const x of el.querySelectorAll('button')) x.tabIndex = show ? 0 : -1;
+}
+
+async function buy(b, what) {
   if (b.disabled) return;
   const label = b.textContent; b.disabled = true; b.textContent = 'Opening checkout…';
-  try { const r = await call('pwCheckout', { token, item: b.dataset.buy }); location.href = r.url; }
+  try { const r = await call('pwCheckout', { token, ...what }); location.href = r.url; }
   catch (e) { b.disabled = false; b.textContent = label; alert(e.message || 'Checkout didn\'t open. Please try again.'); }
 }
 // Coming back from Stripe with the Back button can restore this page with its buttons still disabled.
