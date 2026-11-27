@@ -18,9 +18,9 @@ then open http://localhost:8080.
 ## Hosting
 
 GitHub Pages from the `main` branch, root folder. Repo: `spacepanda99/pocketwatch-studio` (public, so Pages is free).
-Until the domain is set up it lives at https://spacepanda99.github.io/pocketwatch-studio/.
+It lives at https://pocketwatch.studio/ (domain at Namecheap, set up 2026-11-27).
 
-## When the domain is bought (pocketwatch.studio)
+## Domain setup (done 2026-11-27; kept for reference)
 
 Do NOT add the custom domain before the domain is owned and its DNS is set, or the github.io address
 starts redirecting to a domain that doesn't work yet.
