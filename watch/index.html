@@ -2,25 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Your commercials · Pocket Watch Studio</title>
   <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#1f2a33">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../styles.css?v=3">
+  <link rel="stylesheet" href="../styles.css?v=5">
 </head>
 <body class="watch-page">
   <header class="top">
     <div class="wrap top-in">
       <a class="brand" href="../index.html"><img src="../assets/logo.svg" alt="" width="34" height="34"><span>Pocket Watch <em>Studio</em></span></a>
+      <span class="w-secure"><svg width="12" height="14" viewBox="0 0 13 14" aria-hidden="true"><path fill="currentColor" d="M6.5 0a3.5 3.5 0 0 0-3.5 3.5V6H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1V3.5A3.5 3.5 0 0 0 6.5 0Zm-2 3.5a2 2 0 1 1 4 0V6h-4V3.5Z"/></svg>Secure checkout</span>
     </div>
   </header>
 
-  <main id="app">
+  <main id="app" hidden>
     <section class="wrap w-hero">
       <img class="w-logo" id="biz-logo" alt="" hidden>
-      <p class="eyebrow">Made for</p>
-      <h1 id="biz-name">Your business</h1>
-      <p class="lede">We made these commercials for your business. Watch them here. If you like them, they're yours to run anywhere.</p>
+      <p class="eyebrow">Made for <span id="biz-eyebrow"></span></p>
+      <h1>Your commercials are <em>ready to watch</em>.</h1>
+      <p class="lede">We made these for <strong id="biz-name"></strong>. Watch every one for free. Keep the ones you like, and run them anywhere.</p>
       <div class="deal" id="deal" hidden>
         <span class="deal-tag">Save 40%</span>
         <p id="deal-text"></p>
@@ -28,32 +30,60 @@
       </div>
     </section>
 
-    <section class="wrap">
+    <section class="wrap" id="thanks" hidden>
+      <div class="w-thanks" role="status">
+        <h2>Thank you! Your payment went through.</h2>
+        <p>We're now making the full-quality files of what you bought. We'll email you the download link as soon as they're ready. Stripe has emailed you a receipt.</p>
+      </div>
+    </section>
+
+    <section class="wrap" id="pkg-wrap" hidden>
       <div class="pkg" id="pkg">
         <div>
-          <h2>The full set</h2>
-          <p>All four commercials: widescreen and vertical, in English and in Spanish.</p>
+          <p class="pkg-tag">Best value</p>
+          <h2 id="pkg-title">The full set</h2>
+          <p id="pkg-desc"></p>
           <ul class="pkg-list" id="pkg-list"></ul>
         </div>
         <div class="pkg-buy">
           <p class="price"><s id="pkg-was"></s> <strong id="pkg-now"></strong></p>
           <p class="save" id="pkg-save"></p>
-          <a class="btn" id="pkg-btn" href="#">Get all four</a>
+          <button type="button" class="btn" id="pkg-btn" data-buy="package">Get the full set</button>
         </div>
       </div>
     </section>
 
-    <section class="wrap">
-      <h2 class="w-h2">Or pick just one</h2>
-      <div class="vids" id="vids"></div>
-      <p class="w-note">After you pay, you'll get a download link for full-quality files right away. Questions or changes? Just reply to our email.</p>
+    <section class="wrap w-group" id="g-wide" hidden>
+      <div class="w-group-head">
+        <div><p class="eyebrow">Widescreen · 16:9</p><h2>For TV, YouTube and your website</h2></div>
+        <ul class="w-uses"><li>YouTube</li><li>Streaming TV</li><li>Your website</li><li>Facebook</li></ul>
+      </div>
+      <div class="vids wide" id="vids-wide"></div>
     </section>
 
-    <section class="wrap w-missing" id="missing" hidden>
-      <h1>We couldn't find this page.</h1>
-      <p>The link may be incomplete. Please use the link from our email, or <a href="../index.html#contact">get in touch</a>.</p>
+    <section class="wrap w-group" id="g-tall" hidden>
+      <div class="w-group-head">
+        <div><p class="eyebrow">Vertical · 9:16</p><h2>For phones</h2></div>
+        <ul class="w-uses"><li>Instagram Reels</li><li>TikTok</li><li>YouTube Shorts</li><li>Stories</li></ul>
+      </div>
+      <div class="vids tall" id="vids-tall"></div>
+    </section>
+
+    <section class="wrap">
+      <ol class="w-how">
+        <li><span class="num">1</span><h3>Watch</h3><p>Every preview is free to watch, as often as you like.</p></li>
+        <li><span class="num">2</span><h3>Pay securely</h3><p>Checkout is on Stripe. Card, Apple Pay and Google Pay all work.</p></li>
+        <li><span class="num">3</span><h3>Get your files</h3><p>We make the full-quality files and email you the download link.</p></li>
+      </ol>
+      <p class="w-note">Yours to keep. No subscription. Questions or changes? Just reply to our email.</p>
     </section>
   </main>
+
+  <section class="wrap w-missing" id="loading"><p>Loading your commercials…</p></section>
+  <section class="wrap w-missing" id="missing" hidden>
+    <h1>We couldn't find this page.</h1>
+    <p>The link may be incomplete. Please use the link from our email, or <a href="../index.html#contact">get in touch</a>.</p>
+  </section>
 
   <footer class="foot">
     <div class="wrap foot-in">
@@ -61,6 +91,12 @@
       <nav aria-label="Legal"><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></nav>
     </div>
   </footer>
-  <script src="watch.js?v=1"></script>
+
+  <div class="w-bar" id="bar" aria-hidden="true">
+    <div class="w-bar-txt"><strong id="bar-title"></strong><span id="bar-sub"></span></div>
+    <button type="button" class="btn" data-buy="package" tabindex="-1">Get the set</button>
+  </div>
+  <script src="player.js?v=1"></script>
+  <script src="watch.js?v=3"></script>
 </body>
 </html>

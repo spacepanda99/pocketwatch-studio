@@ -61,23 +61,53 @@ Keep files small (H.264 MP4, a few MB). Bump `?v=` on `styles.css` / `main.js` w
 
 ## Prospect pages (watch/)
 
-Each prospect gets a private page: `/watch/?id=<token>`. It loads `<token>.json` (see `watch/demo.json`):
-business name, logo, the date of the first email (`offerStart`), and four videos (widescreen and vertical,
-English and Spanish), each with its own Stripe checkout link, plus `packageCheckout` for the full set.
-Try it: `/watch/?id=demo`.
+Each prospect gets a private page: `/watch/?id=<token>`: 4 widescreen (16:9) and 4 vertical (9:16) commercials,
+a price on each, the package (all of them), and the 40%-off countdown. Try it: `/watch/?id=demo`
+(`node tools/seed-demo.cjs` rewrites the demo).
+
+**Data and checkout run on ProfilePilot's Firebase + live Stripe account** (the user's choice, 2026-11-27), in
+`C:\Mikes Stuff\ProfilePilot\Website\functions\pocketwatch.js`: `pwGetOffer` (page data) and `pwCheckout` (Stripe Checkout).
+Each prospect is a Firestore doc `pwOffers/<token>`: `{ business, logo, email, offerStart "YYYY-MM-DD", offerDays,
+videos: [{ id, title, shape "wide"|"tall", composite }] }`. Use long random tokens for real prospects.
+
+**Previews are composites, not MP4s** (the user's rule): `watch/player.js` plays the editor's layers (picture, voice,
+music, motion graphics) like ProfilePilot's `/ad` page. Publish a commercial with ProfilePilot's
+`node video-editor/share.mjs <projectId>` and put the token it prints (after `?c=`) in the video's `composite` field.
+A video without one shows a "Preview coming soon" placeholder.
+
+**After payment** the videos still have to be rendered, so nothing downloads straight away: the page thanks the
+buyer and says we'll email the link. The order is saved in Firestore `pwOrders/<stripe session id>` (status
+`to-render`) and the admin gets an email listing what to render. Rendering and emailing the buyer the files is
+manual for now.
 
 **Offer:** 40% off for the 14 days of the email campaign (first email day 0, follow-ups days 3, 7 and 13;
-the day-13 email is "last chance"). The page ends the offer at midnight at the end of day 13.
-Prices live at the top of `watch/watch.js` (a prospect's JSON can override them):
-- during the offer: $149 per video, $499 for all four
-- after it: $249 per video, $829 for all four
+the day-13 email is "last chance"). Prices are set on the server (`PRICES` in pocketwatch.js; a prospect doc's
+`prices` can override them), so the page can't be tricked into a lower price:
+- during the offer: $100 per video, $499 for the package
+- after it: $167 per video, $829 for the package
 
-The page's countdown only changes what the page shows; the real price is whatever the Stripe link charges,
-so make the after-offer Stripe links separately when the time comes.
-
-To do: host prospects' JSON and preview videos in Firebase Storage (set `DATA_BASE` in `watch/watch.js`),
-use long random tokens, make the Stripe Payment Links, and deliver full-quality downloads after payment.
+The offer ends at midnight Hawaii time at the end of day 13, the latest U.S. time zone, so nobody is charged more than the page showed.
+The package is only offered while nothing on the page has been bought one by one.
 
 ## Legal pages
 
 `privacy.html` and `terms.html` are plain-English starting drafts, not legal advice. Have them checked before launch.
+
+## To do: record the buyer's TV market (DMA) after checkout (noted 2026-11-25)
+
+Each business should have a **TV broadcast area** field (a Nielsen DMA; there are about 210 in the U.S.). It is worked out
+**once, when someone checks out**, not in a batch, so there are no bulk Firestore writes and no automatic triggers wake up.
+
+How:
+1. After a successful Stripe payment (the webhook, or the success page), take the business's county (from its address or
+   lat/lng, using the free Census geocoder) and look it up in a county-to-DMA table.
+2. Save the DMA name on that one business's record.
+
+Data: no free, current, official list exists (Nielsen sells the official ZIP-by-DMA files for about $2,500 to $8,300, licensed
+for 12 months). A free county-to-DMA list is saved at `C:\Mikes Stuff\ProfilePilot\Website\data-dma\dma.csv`, from GitHub
+`alex-patton/US-TVDMA-BY-COUNTY` (3,149 counties, 212 DMAs, repo updated March 2026, no licence stated, matches by state and
+county NAME with no county codes, so names like "DE KALB" and "ST. JOHNS" need normalising against the Census county list).
+Treat it as a good approximation; if it ever matters, buy Nielsen's file.
+
+Not built yet: the lookup. (The checkout is built: see Prospect pages. The webhook branch to hook it into is the
+`pwToken` one in ProfilePilot's `stripeWebhook`.)
