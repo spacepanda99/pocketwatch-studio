@@ -7,6 +7,22 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css?v=3">
+  <script>
+  // Readable client pages (2026-11-27): <site>/<business-name>, e.g. /bison-plumbing. There is no file there, so GitHub
+  // Pages serves this page; it loads the watch page in place (the address stays the readable one) with PW_ID set.
+  // On github.io the site sits under /pocketwatch-studio/; on the custom domain it is at the root.
+  (function () {
+    var segs = location.pathname.split("/").filter(Boolean);
+    var base = /\.github\.io$/.test(location.hostname) && segs.length ? "/" + segs.shift() + "/" : "/";
+    var slug = segs.length === 1 ? decodeURIComponent(segs[0]) : "";
+    if (!/^[A-Za-z0-9_-]{4,40}$/.test(slug)) return;
+    document.documentElement.style.visibility = "hidden";
+    fetch(base + "watch/index.html", { cache: "no-cache" }).then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (html) {
+      html = html.replace(/<head>/i, "<head><base href=\"" + base + "watch/\"><script>window.PW_ID=" + JSON.stringify(slug) + "<\/script>");
+      document.open(); document.write(html); document.close();
+    }).catch(function () { document.documentElement.style.visibility = ""; });
+  })();
+  </script>
 </head>
 <body>
   <main class="wrap legal" style="text-align:center">

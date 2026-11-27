@@ -1,4 +1,5 @@
-// A prospect's private page: /watch/?id=<token>. Their commercials in two groups (4 widescreen, 4 vertical), each
+// A prospect's page: <site>/<slug> (readable, e.g. /bison-plumbing; 404.html loads this page there and sets
+// window.PW_ID) or the older /watch/?id=<token>. Their commercials in two groups (4 widescreen, 4 vertical), each
 // previewed in the composite player (player.js: layers, nothing rendered yet), single and package prices, and the
 // introductory offer (40% off for the 14 days of the email campaign: first email on day 0, follow-ups on days 3, 7
 // and 13; the day-13 email is the "last chance" one).
@@ -13,7 +14,7 @@ const $ = (id) => document.getElementById(id);
 const money = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const params = new URLSearchParams(location.search);
-const token = (params.get('id') || '').replace(/[^A-Za-z0-9_-]/g, '');
+const token = (window.PW_ID || params.get('id') || '').replace(/[^A-Za-z0-9_-]/g, '');
 const sessionId = (params.get('session_id') || '').replace(/[^A-Za-z0-9_]/g, '');
 
 // Firebase callable functions over plain fetch (no SDK needed): POST {data}, answer {result} or {error}.
@@ -114,7 +115,7 @@ addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
   if (!token) return missing();
   try {
     const d = await call('pwGetOffer', { token, sessionId: sessionId || undefined });
-    if (sessionId) history.replaceState(null, '', location.pathname + '?id=' + encodeURIComponent(token));
+    if (sessionId) history.replaceState(null, '', window.PW_ID ? location.pathname : location.pathname + '?id=' + encodeURIComponent(token));
     render(d);
   } catch (e) { missing(); }
 })();
