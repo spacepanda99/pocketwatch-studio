@@ -80,7 +80,7 @@ function render(d) {
   if (pkgOn) {
     $('pkg-title').textContent = `All ${vids.length} commercials`;
     $('pkg-desc').textContent = wide.length && tall.length ? `Every commercial on this page: ${wide.length} widescreen and ${tall.length} vertical, in one checkout.` : 'Every commercial on this page, in one checkout.';
-    $('pkg-list').innerHTML = [wide.length && `${wide.length} × widescreen`, tall.length && `${tall.length} × vertical`, 'Full-quality files', 'Yours to keep'].filter(Boolean).map((x) => `<li>${x}</li>`).join('');
+    $('pkg-list').innerHTML = [wide.length && `${wide.length} × widescreen`, tall.length && `${tall.length} × vertical`, 'Full-quality files', 'Yours to keep', 'Exclusive local rights to the characters'].filter(Boolean).map((x) => `<li>${x}</li>`).join('');
     $('pkg-now').textContent = money(P.now.pkg);
     const oneByOne = P.now.single * vids.length, saved = oneByOne - P.now.pkg;
     // during the offer the crossed-out price is the set's own regular price, so it reads $699 to $489.30
