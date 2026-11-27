@@ -16,6 +16,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 const params = new URLSearchParams(location.search);
 const token = (window.PW_ID || params.get('id') || '').replace(/[^A-Za-z0-9_-]/g, '');
 const sessionId = (params.get('session_id') || '').replace(/[^A-Za-z0-9_]/g, '');
+const preview = params.get('preview') === '1';   // the admin looking: not counted as a visit
 const picked = new Set();   // videos ticked to buy together
 let data = null, pkgOn = false, pkgOffScreen = false, scrolled = false;
 
@@ -28,6 +29,9 @@ async function call(name, data) {
 }
 
 function missing() { $('loading').hidden = true; $('app').hidden = true; $('missing').hidden = false; }
+
+// the discount as shown, worked out from the prices the server sent (they're set in the admin panel)
+const off = (P) => Math.round((1 - P.now.single / P.regular.single) * 100);
 
 function card(v, live, P) {
   const el = document.createElement('article');
@@ -43,7 +47,7 @@ function card(v, live, P) {
           : `<p class="price small">${live ? `<s>${money(P.regular.single)}</s> ` : ''}<strong>${money(P.now.single)}</strong></p>
              <button type="button" class="btn btn-ghost btn-small pick" data-pick="${esc(v.id)}" aria-pressed="false" aria-label="Select ${esc(v.title || 'this commercial')} (${v.shape === 'tall' ? 'vertical' : 'widescreen'}), ${money(P.now.single)}">Select</button>`}
       </div>
-      ${live && !v.paid ? '<p class="vid-left">30% off ends in <span class="clock"></span></p>' : ''}
+      ${live && !v.paid ? '<p class="vid-left">${off(P)}% off ends in <span class="clock"></span></p>' : ''}
     </div>`;
   if (v.composite) PWPlayer.mount(el.querySelector('.vid-frame'), v.composite);
   return el;
@@ -58,6 +62,7 @@ function render(d) {
   $('thanks').hidden = !d.justPaid;
   $('pkg-clock').hidden = $('bar-clock').hidden = !live;
 
+  for (const x of document.querySelectorAll('.off-pct')) x.textContent = off(P);
   // the offer box (the end time comes from the server, which is what decides the price). It ends at midnight Hawaii
   // time, so the last day is named in Hawaii time too (elsewhere in the U.S. that is the same calendar day).
   $('deal').hidden = !(live && end && unpaid.length);
@@ -150,7 +155,7 @@ addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 (async () => {
   if (!token) return missing();
   try {
-    const d = await call('pwGetOffer', { token, sessionId: sessionId || undefined });
+    const d = await call('pwGetOffer', { token, sessionId: sessionId || undefined, preview: preview || undefined });
     if (sessionId) history.replaceState(null, '', window.PW_ID ? location.pathname : location.pathname + '?id=' + encodeURIComponent(token));
     render(d);
   } catch (e) { missing(); }

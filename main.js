@@ -1,7 +1,6 @@
 // Pocket Watch Studio: the contact form and the footer year.
-// FORM_ENDPOINT is where messages get sent. It is empty until a form service is chosen
-// (see README.md, "Contact form"). While it's empty, the form says it isn't connected yet.
-const FORM_ENDPOINT = '';
+// FORM_ENDPOINT is where messages get sent: the pwContact function (see README.md, "Contact form").
+const FORM_ENDPOINT = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/pwContact';
 
 document.getElementById('year').textContent = new Date().getFullYear();
 

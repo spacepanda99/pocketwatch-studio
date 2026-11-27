@@ -44,13 +44,16 @@ email needs a real mailing address and an unsubscribe link (CAN-SPAM).
 
 ## Contact form
 
-`main.js` → `FORM_ENDPOINT` is empty for now, so the form politely says it isn't connected yet.
-Options to connect it:
-- A Firebase Cloud Function (same Firebase project as the checkout and downloads later) that emails the
-  message. Fits the plan, needs the Blaze plan.
-- A form service (Formspree, Web3Forms, etc.): sign up, paste its endpoint URL into `FORM_ENDPOINT`.
+`main.js` posts to the `pwContact` function (ProfilePilot's `functions/pw-admin.js`), which saves the message, shows it
+in the admin panel under Messages and emails it to the admin (30 a day at most). A hidden `website` field catches bots.
 
-The form posts JSON `{ name, business, email, phone, message }`. A hidden `website` field catches bots.
+## Admin panel (admin/)
+
+https://pocketwatch.studio/admin/ : prospecting, the commercial factory, client pages, outreach, orders, messages and
+settings. Sign in with a ProfilePilot admin account. The page is public code with no keys or data in it; everything
+goes through the admin-only `pwAdmin` function. The factory itself runs on the PC: ProfilePilot's
+`video-editor/pw-worker.mjs` (Windows task "Pocket Watch Worker") takes the jobs the panel queues.
+Bump `?v=` on `admin.css` / `admin.js` when they change.
 
 ## Adding sample videos
 

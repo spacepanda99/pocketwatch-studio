@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin · Pocket Watch Studio</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="../assets/favicon.png?v=2" type="image/png">
+  <link rel="stylesheet" href="admin.css?v=1">
+</head>
+<body>
+  <main id="login" hidden>
+    <img src="../assets/logo-full.png?v=2" alt="Pocket Watch Studio" width="124" height="160">
+    <form id="login-form">
+      <label>Email<input name="email" type="email" autocomplete="username" required></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="btn">Sign in</button>
+      <p id="login-msg" role="alert"></p>
+    </form>
+  </main>
+
+  <div id="app" hidden>
+    <header class="bar">
+      <a class="brand" href="#today"><img src="../assets/logo-mark.png?v=2" alt="" width="24" height="30">Pocket Watch <span>admin</span></a>
+      <span id="worker-dot" class="dot-label"></span>
+      <button class="link" id="signout">Sign out</button>
+    </header>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#today">Today</a><a href="#find">Find prospects</a><a href="#pipeline">Pipeline</a><a href="#outreach">Outreach</a>
+      <a href="#factory">Factory</a><a href="#pages">Client pages</a><a href="#orders">Orders</a><a href="#inbox">Messages</a><a href="#settings">Settings</a>
+    </nav>
+    <main id="view"></main>
+  </div>
+
+  <dialog id="drawer"><div id="drawer-body"></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="../watch/player.js?v=1"></script>
+  <script type="module" src="admin.js?v=1"></script>
+</body>
+</html>
