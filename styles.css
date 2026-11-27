@@ -228,6 +228,7 @@ figcaption { margin-top: 10px; font-weight: 600; }
 .vid-buy { align-self: end; }
 .vid-buy { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
 .vid-info .vid-buy .btn { margin-top: 0; }
+.vid-left { margin: 8px 0 0; font-size: 13.5px; font-weight: 600; color: var(--accent-dark); }
 .vid-paid { font-size: 14px; font-weight: 600; color: #3f6b22; }
 .btn-small { padding: 11px 18px; font-size: 15px; }
 .vids.tall .vid-info { padding: 14px; }

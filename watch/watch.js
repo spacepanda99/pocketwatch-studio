@@ -43,12 +43,14 @@ function card(v, live, P) {
           : `<p class="price small">${live ? `<s>${money(P.regular.single)}</s> ` : ''}<strong>${money(P.now.single)}</strong></p>
              <button type="button" class="btn btn-ghost btn-small pick" data-pick="${esc(v.id)}" aria-pressed="false" aria-label="Select ${esc(v.title || 'this commercial')} (${v.shape === 'tall' ? 'vertical' : 'widescreen'}), ${money(P.now.single)}">Select</button>`}
       </div>
+      ${live && !v.paid ? '<p class="vid-left"></p>' : ''}
     </div>`;
   if (v.composite) PWPlayer.mount(el.querySelector('.vid-frame'), v.composite);
   return el;
 }
 
 function render(d) {
+  let countdown = null;
   const P = d.offer, live = P.live, end = P.end ? new Date(P.end) : null;
   const vids = d.videos || [], wide = vids.filter((v) => v.shape !== 'tall'), tall = vids.filter((v) => v.shape === 'tall');
   const anyPaid = vids.some((v) => v.paid), unpaid = vids.filter((v) => !v.paid);
@@ -63,9 +65,11 @@ function render(d) {
     const tick = () => {
       const ms = end - Date.now(); if (ms <= 0) { location.reload(); return; }
       const days = Math.floor(ms / 864e5), hrs = Math.floor(ms / 36e5) % 24, mins = Math.floor(ms / 6e4) % 60;
-      $('deal-clock').textContent = days >= 1 ? `${days} day${days > 1 ? 's' : ''}, ${hrs} hour${hrs === 1 ? '' : 's'} left` : `${hrs} hour${hrs === 1 ? '' : 's'}, ${mins} minute${mins === 1 ? '' : 's'} left`;
+      const left = days >= 1 ? `${days} day${days > 1 ? 's' : ''}, ${hrs} hour${hrs === 1 ? '' : 's'} left` : `${hrs} hour${hrs === 1 ? '' : 's'}, ${mins} minute${mins === 1 ? '' : 's'} left`;
+      $('deal-clock').textContent = left;
+      for (const p of document.querySelectorAll('.vid-left')) p.textContent = `30% off: ${left}`;
     };
-    tick(); setInterval(tick, 30000);
+    countdown = () => { tick(); setInterval(tick, 30000); };
   }
 
   // the package: everything on the page, only while nothing has been bought one by one
@@ -92,6 +96,7 @@ function render(d) {
     $(group).hidden = !list.length; $(box).innerHTML = '';
     for (const v of list) $(box).appendChild(card(v, live, P));
   }
+  if (countdown) countdown();
   for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => buy(b, { item: b.dataset.buy }));
   for (const b of document.querySelectorAll('[data-pick]')) b.addEventListener('click', () => toggle(b));
   $('bar-picks').addEventListener('click', () => buy($('bar-picks'), { items: [...picked] }));
