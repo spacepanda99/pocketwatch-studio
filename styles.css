@@ -175,7 +175,6 @@ figcaption { margin-top: 10px; font-weight: 600; }
 .vid-info h3 span { color: var(--ink-soft); font-weight: 400; }
 .vid-use { margin: 0; color: var(--ink-soft); font-size: 14.5px; }
 .vid-info .btn { justify-self: start; margin-top: 6px; }
-.w-note { text-align: center; color: var(--ink-soft); margin: 30px 0 70px; }
 .w-missing { padding: 80px 0; text-align: center; }
 
 /* phones and small tablets */
@@ -235,7 +234,7 @@ figcaption { margin-top: 10px; font-weight: 600; }
 .vids.tall .vid-info h3 { font-size: 17px; }
 .vids.tall .vid-buy { flex-direction: column; align-items: stretch; }
 .vids.tall .vid-buy .btn { text-align: center; }
-.w-how { list-style: none; margin: 64px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.w-how { list-style: none; margin: 64px 0 70px; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .w-how li { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
 .w-how h3 { font-size: 19px; }
 .w-how p { margin: 6px 0 0; color: var(--ink-soft); font-size: 15px; }
