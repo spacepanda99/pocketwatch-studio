@@ -1,7 +1,7 @@
 // A prospect's page: <site>/<slug> (readable, e.g. /bison-plumbing; 404.html loads this page there and sets
 // window.PW_ID) or the older /watch/?id=<token>. Their commercials in two groups (4 widescreen, 4 vertical), each
 // previewed in the composite player (player.js: layers, nothing rendered yet), single and package prices, and the
-// introductory offer (40% off for the 14 days of the email campaign: first email on day 0, follow-ups on days 3, 7
+// introductory offer (30% off for the 14 days of the email campaign: first email on day 0, follow-ups on days 3, 7
 // and 13; the day-13 email is the "last chance" one).
 //
 // Everything comes from, and checkout goes through, two Firebase functions on ProfilePilot's project
@@ -11,7 +11,7 @@
 const API = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/';
 
 const $ = (id) => document.getElementById(id);
-const money = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+const money = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: Number.isInteger(Math.round(n * 100) / 100) ? 0 : 2, maximumFractionDigits: 2 });
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const params = new URLSearchParams(location.search);
 const token = (window.PW_ID || params.get('id') || '').replace(/[^A-Za-z0-9_-]/g, '');

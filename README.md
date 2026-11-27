@@ -62,7 +62,7 @@ Keep files small (H.264 MP4, a few MB). Bump `?v=` on `styles.css` / `main.js` w
 ## Prospect pages (watch/)
 
 Each prospect gets a private page: `/watch/?id=<token>`: 4 widescreen (16:9) and 4 vertical (9:16) commercials,
-a price on each, the package (all of them), and the 40%-off countdown. Try it: `/watch/?id=demo`
+a price on each, the package (all of them), and the 30%-off countdown. Try it: `/watch/?id=demo`
 (`node tools/seed-demo.cjs` rewrites the demo).
 
 **Data and checkout run on ProfilePilot's Firebase + live Stripe account** (the user's choice, 2026-11-27), in
@@ -80,11 +80,11 @@ buyer and says we'll email the link. The order is saved in Firestore `pwOrders/<
 `to-render`) and the admin gets an email listing what to render. Rendering and emailing the buyer the files is
 manual for now.
 
-**Offer:** 40% off for the 14 days of the email campaign (first email day 0, follow-ups days 3, 7 and 13;
+**Offer:** 30% off for the 14 days of the email campaign (first email day 0, follow-ups days 3, 7 and 13;
 the day-13 email is "last chance"). Prices are set on the server (`PRICES` in pocketwatch.js; a prospect doc's
 `prices` can override them), so the page can't be tricked into a lower price:
-- during the offer: $100 per video, $499 for the package
-- after it: $167 per video, $829 for the package
+- during the offer: $97.30 per video, $489.30 for the package
+- after it: $139 per video, $699 for the package
 
 The offer ends at midnight Hawaii time at the end of day 13, the latest U.S. time zone, so nobody is charged more than the page showed.
 The package is only offered while nothing on the page has been bought one by one.
