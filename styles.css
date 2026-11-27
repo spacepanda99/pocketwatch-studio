@@ -217,7 +217,8 @@ figcaption { margin-top: 10px; font-weight: 600; }
 .vid { transition: transform .25s, box-shadow .25s; }
 .vid:hover { transform: translateY(-3px); box-shadow: 0 16px 34px -20px rgba(31, 42, 51, .45); }
 .vid.is-paid { border-color: #9cc27a; }
-.vid-info { flex: 1; }
+.vid-info { flex: 1; grid-template-rows: auto auto 1fr; }
+.vid-buy { align-self: end; }
 .vid-buy { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
 .vid-info .vid-buy .btn { margin-top: 0; }
 .vid-paid { font-size: 14px; font-weight: 600; color: #3f6b22; }
