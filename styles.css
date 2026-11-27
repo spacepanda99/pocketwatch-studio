@@ -233,7 +233,7 @@ figcaption { margin-top: 10px; font-weight: 600; }
 .vids.tall .vid-info h3 { font-size: 17px; }
 .vids.tall .vid-buy { flex-direction: column; align-items: stretch; }
 .vids.tall .vid-buy .btn { text-align: center; }
-.w-how { list-style: none; margin: 64px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.w-how { list-style: none; margin: 64px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .w-how li { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
 .w-how h3 { font-size: 19px; }
 .w-how p { margin: 6px 0 0; color: var(--ink-soft); font-size: 15px; }
