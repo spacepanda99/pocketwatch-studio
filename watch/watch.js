@@ -43,7 +43,7 @@ function card(v, live, P) {
           : `<p class="price small">${live ? `<s>${money(P.regular.single)}</s> ` : ''}<strong>${money(P.now.single)}</strong></p>
              <button type="button" class="btn btn-ghost btn-small pick" data-pick="${esc(v.id)}" aria-pressed="false" aria-label="Select ${esc(v.title || 'this commercial')} (${v.shape === 'tall' ? 'vertical' : 'widescreen'}), ${money(P.now.single)}">Select</button>`}
       </div>
-      ${live && !v.paid ? '<p class="vid-left"></p>' : ''}
+      ${live && !v.paid ? '<p class="vid-left">30% off ends in <span class="clock"></span></p>' : ''}
     </div>`;
   if (v.composite) PWPlayer.mount(el.querySelector('.vid-frame'), v.composite);
   return el;
@@ -56,20 +56,22 @@ function render(d) {
   const anyPaid = vids.some((v) => v.paid), unpaid = vids.filter((v) => !v.paid);
   document.title = `Commercials for ${d.business} · Pocket Watch Studio`;
   $('thanks').hidden = !d.justPaid;
+  $('pkg-clock').hidden = $('bar-clock').hidden = !live;
 
   // the offer box (the end time comes from the server, which is what decides the price). It ends at midnight Hawaii
   // time, so the last day is named in Hawaii time too (elsewhere in the U.S. that is the same calendar day).
   $('deal').hidden = !(live && end && unpaid.length);
   if (!$('deal').hidden) {
     $('deal-text').innerHTML = `Order by <strong>${new Date(end - 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'Pacific/Honolulu' })}</strong> to get the introductory price.`;
+    // one countdown, shown the same way everywhere there is a .clock (deal box, each video, the full set, the bar)
     const tick = () => {
       const ms = end - Date.now(); if (ms <= 0) { location.reload(); return; }
-      const days = Math.floor(ms / 864e5), hrs = Math.floor(ms / 36e5) % 24, mins = Math.floor(ms / 6e4) % 60;
-      const left = days >= 1 ? `${days} day${days > 1 ? 's' : ''}, ${hrs} hour${hrs === 1 ? '' : 's'} left` : `${hrs} hour${hrs === 1 ? '' : 's'}, ${mins} minute${mins === 1 ? '' : 's'} left`;
-      $('deal-clock').textContent = left;
-      for (const p of document.querySelectorAll('.vid-left')) p.textContent = `30% off: ${left}`;
+      const s = Math.floor(ms / 1000), two = (n) => String(n).padStart(2, '0');
+      const parts = [[Math.floor(s / 86400), 'days'], [two(Math.floor(s / 3600) % 24), 'hrs'], [two(Math.floor(s / 60) % 60), 'min'], [two(s % 60), 'sec']];
+      const html = parts.map(([n, u]) => `<span><b>${n}</b><i>${u}</i></span>`).join('');
+      for (const c of document.querySelectorAll('.clock')) c.innerHTML = html;
     };
-    countdown = () => { tick(); setInterval(tick, 30000); };
+    countdown = () => { tick(); setInterval(tick, 1000); };
   }
 
   // the package: everything on the page, only while nothing has been bought one by one

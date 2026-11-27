@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="../assets/favicon.png?v=2" type="image/png">
-  <link rel="stylesheet" href="../styles.css?v=13">
+  <link rel="stylesheet" href="../styles.css?v=14">
 </head>
 <body class="watch-page">
   <header class="top">
@@ -48,7 +48,7 @@
       <div class="deal" id="deal" hidden>
         <span class="deal-tag">Save 30%</span>
         <p id="deal-text"></p>
-        <p class="deal-clock" id="deal-clock" aria-live="off"></p>
+        <p class="deal-clock"><span class="clock" role="timer"></span></p>
       </div>
     </section>
 
@@ -64,6 +64,7 @@
           <p class="price"><s id="pkg-was"></s> <strong id="pkg-now"></strong></p>
           <p class="each" id="pkg-each"></p>
           <p class="save" id="pkg-save"></p>
+          <p class="pkg-clock" id="pkg-clock" hidden>30% off ends in <span class="clock"></span></p>
           <button type="button" class="btn" id="pkg-btn" data-buy="package">Get the full set</button>
         </div>
       </div>
@@ -92,13 +93,13 @@
 
   <div class="w-bar" id="bar" aria-hidden="true">
     <div class="w-bar-meter" id="bar-meter" hidden><i></i></div>
-    <div class="w-bar-txt" aria-live="polite"><strong id="bar-title"></strong><span id="bar-sub"></span></div>
+    <div class="w-bar-txt" aria-live="polite"><strong id="bar-title"></strong><span id="bar-sub"></span><p class="bar-clock" id="bar-clock" hidden>30% off ends in <span class="clock"></span></p></div>
     <div class="w-bar-btns">
       <button type="button" class="btn btn-plain" id="bar-picks" tabindex="-1" hidden>Buy these</button>
       <button type="button" class="btn" id="bar-set" data-buy="package" tabindex="-1">Get the set</button>
     </div>
   </div>
   <script src="player.js?v=1"></script>
-  <script src="watch.js?v=9"></script>
+  <script src="watch.js?v=10"></script>
 </body>
 </html>

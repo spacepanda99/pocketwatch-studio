@@ -229,6 +229,19 @@ figcaption { margin-top: 10px; font-weight: 600; }
 .vid-buy { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
 .vid-info .vid-buy .btn { margin-top: 0; }
 .vid-left { margin: 8px 0 0; font-size: 13.5px; font-weight: 600; color: var(--accent-dark); }
+/* the offer countdown */
+.clock { display: inline-flex; gap: 4px; vertical-align: middle; font-variant-numeric: tabular-nums; }
+.clock > span { display: inline-flex; align-items: baseline; gap: 2px; background: var(--ink); color: var(--white); border-radius: 6px; padding: 3px 6px; line-height: 1.3; }
+.clock b { font-size: 14px; font-weight: 700; }
+.clock i { font-style: normal; font-size: 10.5px; font-weight: 400; color: #d4d4d8; }
+.deal-clock .clock b { font-size: 22px; }
+.deal-clock .clock > span { padding: 5px 9px; }
+.pkg .pkg-clock { margin: 0 0 14px; font-size: 13.5px; color: #e4e4e7; }
+.pkg-clock .clock, .bar-clock .clock { margin-left: 4px; }
+.pkg .clock > span, .w-bar .clock > span { background: rgba(255, 255, 255, .14); }
+.bar-clock { margin: 4px 0 0; font-size: 12.5px; color: #d4d4d8; }
+.vids.tall .vid-left .clock { display: flex; margin-top: 4px; gap: 3px; }
+.vids.tall .vid-left .clock > span { flex-direction: column; align-items: center; flex: 1; padding: 3px 2px; }
 .vid-paid { font-size: 14px; font-weight: 600; color: #3f6b22; }
 .btn-small { padding: 11px 18px; font-size: 15px; }
 .vids.tall .vid-info { padding: 14px; }
