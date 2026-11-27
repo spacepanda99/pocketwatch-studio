@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#1f2a33">
   <link rel="icon" href="../assets/favicon.png?v=2" type="image/png">
-  <link rel="stylesheet" href="../styles.css?v=8">
+  <link rel="stylesheet" href="../styles.css?v=9">
 </head>
 <body class="watch-page">
   <header class="top">
@@ -19,21 +19,36 @@
 
   <main id="app" hidden>
     <section class="wrap w-hero">
-      <img class="w-logo" id="biz-logo" alt="" hidden>
-      <p class="eyebrow">Made for <span id="biz-eyebrow"></span></p>
-      <h1>Your commercials are <em>ready to watch</em>.</h1>
-      <p class="lede">We made these for <strong id="biz-name"></strong>. Watch every one for free. Keep the ones you like, and run them anywhere.</p>
-      <div class="deal" id="deal" hidden>
-        <span class="deal-tag">Save 40%</span>
-        <p id="deal-text"></p>
-        <p class="deal-clock" id="deal-clock" aria-live="off"></p>
-      </div>
+      <h1>We crafted these commercials just for you, with no obligation.</h1>
     </section>
 
     <section class="wrap" id="thanks" hidden>
       <div class="w-thanks" role="status">
         <h2>Thank you! Your payment went through.</h2>
         <p>We're now making the full-quality files of what you bought. We'll email you the download link as soon as they're ready. Stripe has emailed you a receipt.</p>
+      </div>
+    </section>
+
+    <section class="wrap w-group" id="g-wide" hidden>
+      <div class="vids wide" id="vids-wide"></div>
+      <p class="set-tip below" id="wide-tip" hidden></p>
+    </section>
+
+    <section class="wrap w-group" id="g-tall" hidden>
+      <div class="w-group-head">
+        <div><p class="eyebrow">Vertical · 9:16</p><h2>For phones</h2></div>
+        <ul class="w-uses"><li>Instagram Reels</li><li>TikTok</li><li>YouTube Shorts</li><li>Stories</li></ul>
+      </div>
+      <div class="vids tall" id="vids-tall"></div>
+      <p class="set-tip below" id="tall-tip" hidden></p>
+    </section>
+
+    <!-- offer and full set sit under the videos, so the videos are the first thing seen (2026-11-27) -->
+    <section class="wrap w-offer">
+      <div class="deal" id="deal" hidden>
+        <span class="deal-tag">Save 40%</span>
+        <p id="deal-text"></p>
+        <p class="deal-clock" id="deal-clock" aria-live="off"></p>
       </div>
     </section>
 
@@ -52,24 +67,6 @@
           <button type="button" class="btn" id="pkg-btn" data-buy="package">Get the full set</button>
         </div>
       </div>
-    </section>
-
-    <section class="wrap w-group" id="g-wide" hidden>
-      <div class="w-group-head">
-        <div><p class="eyebrow">Widescreen · 16:9</p><h2>For TV, YouTube and your website</h2></div>
-        <ul class="w-uses"><li>YouTube</li><li>Streaming TV</li><li>Your website</li><li>Facebook</li></ul>
-      </div>
-      <p class="set-tip" id="wide-tip" hidden></p>
-      <div class="vids wide" id="vids-wide"></div>
-    </section>
-
-    <section class="wrap w-group" id="g-tall" hidden>
-      <div class="w-group-head">
-        <div><p class="eyebrow">Vertical · 9:16</p><h2>For phones</h2></div>
-        <ul class="w-uses"><li>Instagram Reels</li><li>TikTok</li><li>YouTube Shorts</li><li>Stories</li></ul>
-      </div>
-      <p class="set-tip" id="tall-tip" hidden></p>
-      <div class="vids tall" id="vids-tall"></div>
     </section>
 
     <section class="wrap">
@@ -104,6 +101,6 @@
     </div>
   </div>
   <script src="player.js?v=1"></script>
-  <script src="watch.js?v=5"></script>
+  <script src="watch.js?v=6"></script>
 </body>
 </html>

@@ -17,7 +17,7 @@ const params = new URLSearchParams(location.search);
 const token = (window.PW_ID || params.get('id') || '').replace(/[^A-Za-z0-9_-]/g, '');
 const sessionId = (params.get('session_id') || '').replace(/[^A-Za-z0-9_]/g, '');
 const picked = new Set();   // videos ticked to buy together
-let data = null, pkgOn = false, pkgOffScreen = false;
+let data = null, pkgOn = false, pkgOffScreen = false, scrolled = false;
 
 // Firebase callable functions over plain fetch (no SDK needed): POST {data}, answer {result} or {error}.
 async function call(name, data) {
@@ -53,8 +53,6 @@ function render(d) {
   const vids = d.videos || [], wide = vids.filter((v) => v.shape !== 'tall'), tall = vids.filter((v) => v.shape === 'tall');
   const anyPaid = vids.some((v) => v.paid), unpaid = vids.filter((v) => !v.paid);
   document.title = `Commercials for ${d.business} · Pocket Watch Studio`;
-  $('biz-name').textContent = d.business; $('biz-eyebrow').textContent = d.business;
-  if (d.logo) { $('biz-logo').src = d.logo; $('biz-logo').alt = d.business + ' logo'; $('biz-logo').hidden = false; }
   $('thanks').hidden = !d.justPaid;
 
   // the offer box (the end time comes from the server, which is what decides the price). It ends at midnight Hawaii
@@ -83,7 +81,7 @@ function render(d) {
     $('pkg-each').textContent = `About ${money(Math.round(P.now.pkg / vids.length))} a video instead of ${money(P.now.single)}`;
     $('pkg-save').textContent = saved > 0 ? `You save ${money(saved)} over buying them one at a time.` : '';
   }
-  // above each group: what the same video costs inside the set
+  // under each group: what the same video costs inside the set
   for (const tip of ['wide-tip', 'tall-tip']) {
     $(tip).hidden = !pkgOn;
     if (pkgOn) $(tip).innerHTML = `Select the ones you want, or <button type="button" class="linkbtn" data-buy="package">get all ${vids.length} for ${money(P.now.pkg)}</button> (about ${money(Math.round(P.now.pkg / vids.length))} each).`;
@@ -97,9 +95,11 @@ function render(d) {
   for (const b of document.querySelectorAll('[data-pick]')) b.addEventListener('click', () => toggle(b));
   $('bar-picks').addEventListener('click', () => buy($('bar-picks'), { items: [...picked] }));
 
-  // the sticky bar: the picks and what the set would cost; with nothing picked, the set once its card is scrolled away
+  // the sticky bar: the picks and what the set would cost; with nothing picked, the set once they scroll, while its
+  // card is off screen (never on first load, so nothing covers the videos)
   document.body.classList.add('has-bar');
-  if (pkgOn) new IntersectionObserver(([en]) => { pkgOffScreen = !en.isIntersecting && en.boundingClientRect.top < 0; bar(); }).observe($('pkg'));
+  if (pkgOn) new IntersectionObserver(([en]) => { pkgOffScreen = !en.isIntersecting; bar(); }).observe($('pkg'));
+  if (pkgOn) addEventListener('scroll', () => { const s = scrollY > 200; if (s !== scrolled) { scrolled = s; bar(); } }, { passive: true });
   $('loading').hidden = true; $('app').hidden = false;
 }
 
@@ -115,7 +115,7 @@ function toggle(b) {
 // charges the set price then too, so nobody pays more for fewer videos).
 function bar() {
   const P = data.offer.now, n = picked.size, total = n * P.single, all = data.videos.length;
-  const better = pkgOn && total >= P.pkg, show = n > 0 || (pkgOn && pkgOffScreen);
+  const better = pkgOn && total >= P.pkg, show = n > 0 || (pkgOn && pkgOffScreen && scrolled);
   const el = $('bar'), picks = $('bar-picks'), set = $('bar-set'), meter = $('bar-meter');
   if (!n) { $('bar-title').textContent = `All ${all} commercials · ${money(P.pkg)}`; $('bar-sub').textContent = `Save ${money(Math.max(0, all * P.single - P.pkg))} over one at a time`; }
   else if (better) { $('bar-title').textContent = `Get all ${all} for ${money(P.pkg)}`; $('bar-sub').textContent = `Less than the ${money(total)} your ${n} picks cost on their own`; }
