@@ -77,9 +77,10 @@ function render(d) {
     $('pkg-list').innerHTML = [wide.length && `${wide.length} × widescreen`, tall.length && `${tall.length} × vertical`, 'Full-quality files', 'Yours to keep'].filter(Boolean).map((x) => `<li>${x}</li>`).join('');
     $('pkg-now').textContent = money(P.now.pkg);
     const oneByOne = P.now.single * vids.length, saved = oneByOne - P.now.pkg;
-    $('pkg-was').textContent = saved > 0 ? money(oneByOne) : '';
+    // during the offer the crossed-out price is the set's own regular price, so it reads $699 to $489.30
+    $('pkg-was').textContent = live ? money(P.regular.pkg) : saved > 0 ? money(oneByOne) : '';
     $('pkg-each').textContent = `About ${money(Math.round(P.now.pkg / vids.length))} a video instead of ${money(P.now.single)}`;
-    $('pkg-save').textContent = saved > 0 ? `You save ${money(saved)} over buying them one at a time.` : '';
+    $('pkg-save').textContent = live ? `You save ${money(P.regular.pkg - P.now.pkg)} on the full set.` : saved > 0 ? `You save ${money(saved)} over buying them one at a time.` : '';
   }
   // under each group: what the same video costs inside the set
   for (const tip of ['wide-tip', 'tall-tip']) {
