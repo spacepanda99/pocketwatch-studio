@@ -25,6 +25,11 @@ a { color: inherit; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 600 19px/1 var(--serif); letter-spacing: .2px; }
 .brand em { font-style: normal; color: var(--brass-dark); }
 .brand-small { font-size: 16px; }
+.brand img { width: auto; }
+.brand-mark { height: 46px; }
+.brand-words { height: 44px; }
+.brand-small .brand-mark { height: 34px; }
+.brand-small .brand-words { height: 34px; }
 .nav { display: flex; align-items: center; gap: 26px; }
 .nav a:not(.btn) { text-decoration: none; color: var(--ink-soft); font-size: 15px; }
 .nav a:not(.btn):hover { color: var(--ink); }
@@ -188,6 +193,8 @@ figcaption { margin-top: 10px; font-weight: 600; }
   body { font-size: 16px; }
   .nav a:not(.btn) { display: none; }
   .brand { font-size: 17px; }
+  .brand-mark { height: 40px; }
+  .brand-words { height: 36px; }
   .lede { font-size: 17.5px; }
   .cta .btn { flex: 1; text-align: center; }
   .form { grid-template-columns: 1fr; padding: 20px; }
