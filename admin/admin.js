@@ -176,7 +176,7 @@ views.find = async (el) => {
         <td><b>${esc(i.name)}</b><br><a class="small soft" href="https://${esc(i.domain)}" target="_blank" rel="noopener noreferrer">${esc(i.domain)}</a></td>
         <td>${esc([i.city, i.state].filter(Boolean).join(', '))}</td>
         <td>${i.reviews ? `${i.reviews}${i.rating ? ` <span class="soft">(${i.rating})</span>` : ''}` : ''}</td>
-        <td class="small">${[i.email && esc(i.email), i.contactForm && 'contact form', i.phone && esc(i.phone), !i.canMake && '<span class="soft">no usable logo</span>'].filter(Boolean).join('<br>')}</td></tr>`).join('')}
+        <td class="small">${[i.email && esc(i.email), web(i.contactForm) && `<a href="${esc(i.contactForm)}" target="_blank" rel="noopener noreferrer">${i.hasForm === 0 ? 'contact page' : 'contact form'}</a>`, !i.email && !i.contactForm && '<span class="soft">no email or form found</span>', i.phone && esc(i.phone), !i.canMake && '<span class="soft">no usable logo</span>'].filter(Boolean).join('<br>')}</td></tr>`).join('')}
       </tbody></table></div>
       <div class="row"><button class="btn ghost" id="prev"${F.page ? '' : ' disabled'}>Back</button><span class="soft">Page ${F.page + 1} of ${pages}</span><button class="btn ghost" id="next"${F.page < pages - 1 ? '' : ' disabled'}>Next</button></div>
     </div>`;
