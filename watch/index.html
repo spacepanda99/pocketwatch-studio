@@ -7,13 +7,13 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="../assets/favicon.png?v=2" type="image/png">
-  <link rel="stylesheet" href="../styles.css?v=15">
+  <link rel="stylesheet" href="../styles.css?v=16">
 </head>
 <body class="watch-page">
   <header class="top">
     <div class="wrap top-in">
       <a class="brand" href="../index.html"><img class="brand-mark" src="../assets/logo-mark.png?v=2" alt="" width="400" height="495"><img class="brand-words" src="../assets/logo-words.png?v=2" alt="Pocket Watch Studio" width="521" height="168"></a>
-      <span class="w-secure"><svg width="12" height="14" viewBox="0 0 13 14" aria-hidden="true"><path fill="currentColor" d="M6.5 0a3.5 3.5 0 0 0-3.5 3.5V6H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1V3.5A3.5 3.5 0 0 0 6.5 0Zm-2 3.5a2 2 0 1 1 4 0V6h-4V3.5Z"/></svg>Secure checkout</span>
+      <a class="w-secure" href="#checkout"><svg width="12" height="14" viewBox="0 0 13 14" aria-hidden="true"><path fill="currentColor" d="M6.5 0a3.5 3.5 0 0 0-3.5 3.5V6H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1V3.5A3.5 3.5 0 0 0 6.5 0Zm-2 3.5a2 2 0 1 1 4 0V6h-4V3.5Z"/></svg>Secure checkout</a>
     </div>
   </header>
 
@@ -74,8 +74,37 @@
       <p class="w-rights">Every commercial you buy comes with <strong>exclusive local rights to its characters</strong>.</p>
       <ol class="w-how">
         <li><span class="num">1</span><h3>Select your videos</h3><p>Pick the ones you want.</p></li>
-        <li><span class="num">2</span><h3>Check out</h3><p>We prepare your files and email you a link to download.</p></li>
+        <li><span class="num">2</span><h3>Check out below</h3><p>We prepare your files and email you a link to download.</p></li>
       </ol>
+    </section>
+
+    <!-- checkout is on this page (2026-11-28): the order, then Stripe's payment form in place of a separate page -->
+    <section class="wrap co" id="checkout" aria-labelledby="co-title">
+      <div class="co-card">
+        <h2 id="co-title" tabindex="-1">Check out</h2>
+
+        <div id="co-order">
+          <p class="co-empty" id="co-empty">Select videos above, or take them all.</p>
+          <ul class="co-lines" id="co-lines"></ul>
+          <div class="co-total" id="co-total"><span>Total</span><strong id="co-sum"></strong></div>
+          <p class="co-nudge" id="co-nudge" hidden></p>
+          <button type="button" class="btn co-pay" id="co-pay">Continue to payment</button>
+        </div>
+
+        <div class="co-head" id="co-head" hidden>
+          <p><strong id="co-head-title"></strong> <span id="co-head-sum"></span></p>
+          <button type="button" class="linkbtn" id="co-change">Change order</button>
+        </div>
+        <p class="co-status" id="co-status" role="status" hidden></p>
+        <p class="co-error" id="co-error" role="alert" hidden></p>
+        <div class="co-form" id="co-form"></div>
+
+        <div class="w-thanks" id="co-done" role="status" hidden>
+          <h2>Thank you! Your payment went through.</h2>
+          <p>We're now making the full-quality files of what you bought. We'll email you the download link as soon as they're ready. Stripe has emailed you a receipt.</p>
+        </div>
+        <p class="co-note" id="co-note">Payments are handled by Stripe. Your card details never reach us. <a href="../terms.html" target="_blank">Terms</a> · <a href="../privacy.html" target="_blank">Privacy</a></p>
+      </div>
     </section>
   </main>
 
@@ -101,6 +130,6 @@
     </div>
   </div>
   <script src="player.js?v=1"></script>
-  <script src="watch.js?v=12"></script>
+  <script src="watch.js?v=13"></script>
 </body>
 </html>

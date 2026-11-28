@@ -5,9 +5,14 @@
 // and 13; the day-13 email is the "last chance" one).
 //
 // Everything comes from, and checkout goes through, two Firebase functions on ProfilePilot's project
-// (functions/pocketwatch.js there): pwGetOffer (page data, prices worked out on the server) and pwCheckout (opens
-// Stripe Checkout). After paying, the buyer comes back with ?session_id=..., the order is recorded, and we render the
-// videos and email the download link (they are not ready the moment the payment goes through).
+// (functions/pocketwatch.js there): pwGetOffer (page data, prices worked out on the server) and pwCheckout (makes the
+// Stripe Checkout session). Payment is Stripe's embedded form in the #checkout section at the bottom of this page.
+// After paying, pwGetOffer is called with the session id, the order is recorded (the Stripe webhook records it too),
+// and we render the videos and email the download link (they are not ready the moment the payment goes through).
+// A session's contents are fixed, so changing the order closes the form; Continue opens a new one.
+// If Stripe.js can't load, the buyer is sent to Stripe's own checkout page instead.
+// Publishable key, safe in public code (same account as ProfilePilot's js/stripe-config.js).
+const STRIPE_KEY = 'pk_live_51U7g0q25dTAGrbc02SiAnZsrhQdT5MtBvNGjSqc8kuFYaMfkEh3REoXSWyzp7EYNjJ3fmz8gJVvPmohr1yYPpluC008ypv2MKo';
 const API = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/';
 
 const $ = (id) => document.getElementById(id);
@@ -18,7 +23,11 @@ const token = (window.PW_ID || params.get('id') || '').replace(/[^A-Za-z0-9_-]/g
 const sessionId = (params.get('session_id') || '').replace(/[^A-Za-z0-9_]/g, '');
 const preview = params.get('preview') === '1';   // the admin looking: not counted as a visit
 const picked = new Set();   // videos ticked to buy together
-let data = null, pkgOn = false, pkgOffScreen = false, scrolled = false;
+let data = null, pkgOn = false, pkgOffScreen = false, scrolled = false, coOnScreen = false;
+let wantSet = false;          // "get the set" was pressed
+let form = null;              // the mounted Stripe form
+let run = 0;                  // goes up whenever the form is closed, so a slow answer for an old order is dropped
+let busy = false, paidNow = false, stripeJs = null;
 
 // Firebase callable functions over plain fetch (no SDK needed): POST {data}, answer {result} or {error}.
 async function call(name, data) {
@@ -36,6 +45,7 @@ const off = (P) => Math.round((1 - P.now.single / P.regular.single) * 100);
 function card(v, live, P) {
   const el = document.createElement('article');
   el.className = 'vid ' + v.shape + (v.paid ? ' is-paid' : '');
+  el.dataset.id = v.id;
   el.innerHTML = `
     <div class="vid-frame ${v.shape}">${v.composite ? '' : `<div class="vid-soon"><span>Preview coming soon</span></div>`}</div>
     <div class="vid-info">
@@ -70,7 +80,8 @@ function render(d) {
     $('deal-text').innerHTML = `Order by <strong>${new Date(end - 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'Pacific/Honolulu' })}</strong> to get the introductory price.`;
     // one countdown, shown the same way everywhere there is a .clock (deal box, each video, the full set, the bar)
     const tick = () => {
-      const ms = end - Date.now(); if (ms <= 0) { location.reload(); return; }
+      const ms = end - Date.now();
+      if (ms <= 0) { if (!form && !paidNow) location.reload(); return; }   // never wipe a card half typed in
       const s = Math.floor(ms / 1000), two = (n) => String(n).padStart(2, '0');
       const parts = [[Math.floor(s / 86400), 'days'], [two(Math.floor(s / 3600) % 24), 'hrs'], [two(Math.floor(s / 60) % 60), 'min'], [two(s % 60), 'sec']];
       const html = parts.map(([n, u]) => `<span><b>${n}</b><i>${u}</i></span>`).join('');
@@ -104,9 +115,17 @@ function render(d) {
     for (const v of list) $(box).appendChild(card(v, live, P));
   }
   if (countdown) countdown();
-  for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => buy(b, { item: b.dataset.buy }));
+  for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => { wantSet = true; checkout(); });
   for (const b of document.querySelectorAll('[data-pick]')) b.addEventListener('click', () => toggle(b));
-  $('bar-picks').addEventListener('click', () => buy($('bar-picks'), { items: [...picked] }));
+  $('bar-picks').addEventListener('click', () => { wantSet = false; checkout(); });
+  $('co-pay').addEventListener('click', () => checkout());
+  $('co-change').addEventListener('click', () => { closeForm(); summary(); $('co-title').focus({ preventScroll: true }); });
+
+  // nothing left to buy: no checkout section
+  $('checkout').hidden = !unpaid.length;
+  document.querySelector('.w-secure').hidden = !unpaid.length;
+  summary();
+  new IntersectionObserver(([en]) => { coOnScreen = en.isIntersecting; bar(); }).observe($('checkout'));
 
   // the sticky bar: the picks and what the set would cost; with nothing picked, the set once they scroll, while its
   // card is off screen (never on first load, so nothing covers the videos)
@@ -121,14 +140,143 @@ function toggle(b) {
   if (on) picked.add(id); else picked.delete(id);
   b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '✓ Selected' : 'Select';
   b.closest('.vid').classList.toggle('is-picked', on);
-  bar();
+  wantSet = false;
+  changed();
 }
 
-// The bar's words and buttons. When the picks cost as much as the set or more, only the set is offered (the server
-// charges the set price then too, so nobody pays more for fewer videos).
+function changed() { closeForm(); summary(); bar(); }
+
+// What would be bought now. When the picks cost as much as the set or more, it is the set (the server charges the set
+// price then too, so nobody pays more for fewer videos).
+function order() {
+  const P = data.offer.now, vids = data.videos, picks = vids.filter((v) => picked.has(v.id) && !v.paid);
+  const asSet = pkgOn && (wantSet || picks.length * P.single >= P.pkg);
+  const lines = asSet
+    ? [{ title: `All ${vids.length} commercials`, note: 'The full set', price: P.pkg }]
+    : picks.map((v) => ({ id: v.id, title: v.title || 'Commercial', note: v.shape === 'tall' ? 'Vertical 9:16' : 'Widescreen 16:9', price: P.single }));
+  return { asSet, picks, lines, total: lines.reduce((n, l) => n + Math.round(l.price * 100), 0) / 100 };
+}
+
+// The order as listed in the checkout section. The set can be removed only when it was asked for by its button (picks
+// that add up to more than the set stay sold as the set).
+function summary() {
+  if (paidNow) return;
+  const P = data.offer.now, o = order(), n = o.lines.length, all = data.videos.length;
+  const canDrop = (l) => l.id || o.picks.length * P.single < P.pkg;
+  $('co-lines').innerHTML = o.lines.map((l) => `<li><span><b>${esc(l.title)}</b><i>${l.note}</i></span><em>${money(l.price)}</em>${
+    canDrop(l) ? `<button type="button" class="co-x" data-drop="${esc(l.id || '')}" aria-label="Remove ${esc(l.title)}">×</button>` : ''}</li>`).join('');
+  for (const x of $('co-lines').querySelectorAll('[data-drop]')) x.addEventListener('click', () => {
+    if (!x.dataset.drop) { wantSet = false; changed(); return; }
+    document.querySelector(`.pick[data-pick="${x.dataset.drop}"]`).click();
+  });
+  $('co-empty').hidden = !!n;
+  $('co-total').hidden = $('co-pay').hidden = !n;
+  $('co-sum').textContent = money(o.total);
+  const nudge = $('co-nudge');
+  nudge.hidden = !pkgOn || o.asSet;
+  if (!nudge.hidden) {
+    nudge.innerHTML = `<button type="button" class="linkbtn">Get all ${all} for ${money(P.pkg)}</button>${n ? ` (${money(P.pkg - o.total)} more)` : ''}`;
+    nudge.firstElementChild.addEventListener('click', () => { wantSet = true; checkout(); });
+  }
+}
+
+function closeForm() {
+  run++; busy = false;
+  if (form) { form.destroy(); form = null; }
+  $('co-form').innerHTML = '';
+  $('co-head').hidden = $('co-status').hidden = $('co-error').hidden = true;
+  if (!paidNow) $('co-order').hidden = false;
+}
+
+function stripe() {
+  if (!stripeJs) stripeJs = new Promise((ok, no) => {
+    const s = document.createElement('script');
+    const fail = () => { stripeJs = null; s.remove(); no(new Error('Stripe.js did not load')); };
+    const timer = setTimeout(fail, 12000);
+    s.src = 'https://js.stripe.com/v3/';
+    s.onload = () => { clearTimeout(timer); if (window.Stripe) ok(window.Stripe(STRIPE_KEY)); else fail(); };
+    s.onerror = () => { clearTimeout(timer); fail(); };
+    document.head.appendChild(s);
+  });
+  return stripeJs;
+}
+
+const toCheckout = () => $('checkout').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+
+// Bring the checkout section into view and open Stripe's form there for the current order.
+async function checkout() {
+  if (paidNow || busy) return toCheckout();
+  closeForm(); summary(); bar();
+  const o = order();
+  toCheckout();
+  if (!o.lines.length) return;
+  const mine = run, what = o.asSet ? { item: 'package' } : { items: o.picks.map((v) => v.id) };
+  busy = true;
+  $('co-order').hidden = true;
+  $('co-head').hidden = false;
+  $('co-head-title').textContent = o.lines.length === 1 ? o.lines[0].title : `${o.lines.length} commercials`;
+  $('co-head-sum').textContent = money(o.total);
+  $('co-status').textContent = 'Opening secure payment…';
+  $('co-status').hidden = false;
+  const failed = (e) => {
+    if (mine !== run) return;
+    closeForm(); summary();
+    $('co-error').textContent = e.message || 'Checkout didn\'t open. Please try again.';
+    $('co-error').hidden = false;
+  };
+  let js;
+  try { js = await stripe(); }
+  catch (e) {   // the form can't load here: use Stripe's own checkout page
+    if (mine !== run) return;
+    try { const r = await call('pwCheckout', { token, ...what }); if (mine === run) location.href = r.url; } catch (err) { failed(err); }
+    return;
+  }
+  try {
+    const r = await call('pwCheckout', { token, ...what, embedded: true });
+    if (mine !== run) return;
+    const made = await js.initEmbeddedCheckout({ clientSecret: r.clientSecret, onComplete: () => done(r.sessionId, o) });
+    if (mine !== run) return made.destroy();   // the order changed while it was loading
+    form = made;
+    form.mount('#co-form');
+    busy = false;
+    $('co-status').hidden = true;
+  } catch (e) { failed(e); }
+}
+
+// Paid, without leaving the page: thank them here, mark what they bought, and record the order.
+async function done(id, o) {
+  paidNow = true;
+  const bought = new Set(o.asSet ? data.videos.map((v) => v.id) : o.picks.map((v) => v.id));
+  closeForm();
+  $('co-order').hidden = $('co-note').hidden = $('co-title').hidden = true;
+  $('co-done').hidden = false;
+  for (const v of data.videos) {
+    if (!bought.has(v.id)) continue;
+    v.paid = true;
+    const el = document.querySelector(`.vid[data-id="${v.id}"]`);
+    el.classList.remove('is-picked'); el.classList.add('is-paid');
+    el.querySelector('.vid-buy').innerHTML = '<span class="vid-paid">✓ Bought. We\'ll email your file.</span>';
+    const left = el.querySelector('.vid-left'); if (left) left.remove();
+  }
+  // another order starts with a fresh page, so the prices and the set offer come from the server again
+  pkgOn = false;
+  $('pkg-wrap').hidden = $('deal').hidden = $('wide-tip').hidden = $('tall-tip').hidden = true;
+  for (const b of document.querySelectorAll('[data-pick]')) b.hidden = true;
+  picked.clear(); bar(); toCheckout();
+  try { await call('pwGetOffer', { token, sessionId: id }); } catch (e) { /* the Stripe webhook records it too */ }
+  if (data.videos.some((v) => !v.paid)) {
+    const again = document.createElement('button');
+    again.type = 'button'; again.className = 'btn btn-ghost btn-small'; again.textContent = 'Buy more videos';
+    again.addEventListener('click', () => location.reload());
+    $('co-done').appendChild(again);
+  }
+}
+
+// The sticky bar's words and buttons (it steps aside while the checkout section is on screen). When the picks cost as
+// much as the set or more, only the set is offered.
 function bar() {
   const P = data.offer.now, n = picked.size, total = n * P.single, all = data.videos.length;
-  const better = pkgOn && total >= P.pkg, show = n > 0 || (pkgOn && pkgOffScreen && scrolled);
+  const better = pkgOn && total >= P.pkg, show = !paidNow && !coOnScreen && (n > 0 || (pkgOn && pkgOffScreen && scrolled));
   const el = $('bar'), picks = $('bar-picks'), set = $('bar-set'), meter = $('bar-meter');
   if (!n) { $('bar-title').textContent = `All ${all} commercials · ${money(P.pkg)}`; $('bar-sub').textContent = `Save ${money(Math.max(0, all * P.single - P.pkg))} over one at a time`; }
   else if (better) { $('bar-title').textContent = `Get all ${all} for ${money(P.pkg)}`; $('bar-sub').textContent = `Less than the ${money(total)} your ${n} picks cost on their own`; }
@@ -143,13 +291,7 @@ function bar() {
   for (const x of el.querySelectorAll('button')) x.tabIndex = show ? 0 : -1;
 }
 
-async function buy(b, what) {
-  if (b.disabled) return;
-  const label = b.textContent; b.disabled = true; b.textContent = 'Opening checkout…';
-  try { const r = await call('pwCheckout', { token, ...what }); location.href = r.url; }
-  catch (e) { b.disabled = false; b.textContent = label; alert(e.message || 'Checkout didn\'t open. Please try again.'); }
-}
-// Coming back from Stripe with the Back button can restore this page with its buttons still disabled.
+// Coming back from Stripe's own page with the Back button can restore this page mid-checkout.
 addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 
 (async () => {

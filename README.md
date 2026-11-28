@@ -69,7 +69,7 @@ a price on each, the package (all of them), and the 30%-off countdown. Try it: `
 (`node tools/seed-demo.cjs` rewrites the demo).
 
 **Data and checkout run on ProfilePilot's Firebase + live Stripe account** (the user's choice, 2026-11-27), in
-`C:\Mikes Stuff\ProfilePilot\Website\functions\pocketwatch.js`: `pwGetOffer` (page data) and `pwCheckout` (Stripe Checkout).
+`C:\Mikes Stuff\ProfilePilot\Website\functions\pocketwatch.js`: `pwGetOffer` (page data) and `pwCheckout` (Stripe Checkout, paid in Stripe's embedded form in the `#checkout` section at the bottom of the page).
 Each prospect is a Firestore doc `pwOffers/<token>`: `{ business, logo, email, offerStart "YYYY-MM-DD", offerDays,
 videos: [{ id, title, shape "wide"|"tall", composite }] }`. Use long random tokens for real prospects.
 
