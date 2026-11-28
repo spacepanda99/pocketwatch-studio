@@ -252,11 +252,6 @@ figcaption { margin-top: 10px; font-weight: 600; }
 .vids.tall .vid-info h3 { font-size: 17px; }
 .vids.tall .vid-buy { flex-direction: column; align-items: stretch; }
 .vids.tall .vid-buy .btn { text-align: center; }
-.w-how { list-style: none; margin: 20px 0 70px; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.w-how li { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
-.w-how h3 { font-size: 19px; }
-.w-how p { margin: 6px 0 0; color: var(--ink-soft); font-size: 15px; }
-.w-how .num { margin-bottom: 12px; }
 .w-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 10px max(16px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); background: rgba(25, 25, 28, .96); color: var(--white);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transform: translateY(110%); transition: transform .3s; }
@@ -289,29 +284,18 @@ body.has-bar .foot { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 /* checkout at the bottom of the page: the order, then Stripe's own payment form inside the same card */
 a.w-secure { text-decoration: none; }
 a.w-secure[hidden] { display: none; }
-.w-how { margin-bottom: 22px; }
-.co { scroll-margin-top: 82px; margin-bottom: 70px; }
+.co-send { margin: 6px 0 0; text-align: center; color: var(--ink-soft); }
+.co { scroll-margin-top: 82px; margin-top: 28px; margin-bottom: 70px; }
 .co-card { background: var(--white); border: 1px solid var(--line); border-top: 4px solid var(--accent); border-radius: var(--radius); padding: 28px 28px 20px; box-shadow: 0 26px 50px -34px rgba(25, 25, 28, .45); }
 .co-card h2 { font-size: clamp(26px, 3.6vw, 34px); text-align: center; }
 .co-card h2:focus { outline: none; }
 .co-card [hidden] { display: none; }
-#co-order { max-width: 560px; margin: 18px auto 0; }
-.co-empty { margin: 0; text-align: center; color: var(--ink-soft); }
-.co-lines { list-style: none; margin: 0; padding: 0; }
-.co-lines li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-.co-lines li > span { flex: 1; min-width: 0; }
-.co-lines b { display: block; }
-.co-lines i { display: block; font-style: normal; font-size: 14px; color: var(--ink-soft); }
-.co-lines em { font-style: normal; font-weight: 600; font-variant-numeric: tabular-nums; }
-.co-x { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--white); color: var(--ink-soft); font-size: 19px; line-height: 1; cursor: pointer; }
-.co-x:hover { border-color: var(--accent); color: var(--accent); }
-.co-x:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.co-total { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0 0; font-weight: 600; }
-.co-total strong { font: 700 32px/1 var(--display); }
-.co-nudge { margin: 14px 0 0; text-align: center; font-size: 15px; color: var(--ink-soft); }
-.co-pay { display: block; width: 100%; margin-top: 16px; background: var(--accent); }
-.co-head { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; }
+.co-empty { margin: 14px 0 0; text-align: center; color: var(--ink-soft); }
+.co-head { margin-top: 10px; text-align: center; }
 .co-head p { margin: 0; }
+.co-head strong, .co-head span { font-size: 19px; }
+.co-nudge { margin-top: 4px; font-size: 15px; color: var(--ink-soft); }
+.co-retry { margin: 14px 0 0; text-align: center; }
 .co-status { margin: 22px 0; text-align: center; color: var(--ink-soft); }
 .co-error { margin: 14px auto 0; max-width: 560px; text-align: center; font-weight: 600; color: var(--accent); }
 .co-form:not(:empty) { margin-top: 18px; }
@@ -347,7 +331,6 @@ a.w-secure[hidden] { display: none; }
 
 @media (max-width: 860px) {
   .vids.tall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .w-how { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
   .vids.wide { grid-template-columns: 1fr; }

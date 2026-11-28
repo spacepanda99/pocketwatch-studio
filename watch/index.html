@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="../assets/favicon.png?v=2" type="image/png">
-  <link rel="stylesheet" href="../styles.css?v=16">
+  <link rel="stylesheet" href="../styles.css?v=17">
 </head>
 <body class="watch-page">
   <header class="top">
@@ -72,31 +72,22 @@
 
     <section class="wrap">
       <p class="w-rights">Every commercial you buy comes with <strong>exclusive local rights to its characters</strong>.</p>
-      <ol class="w-how">
-        <li><span class="num">1</span><h3>Select your videos</h3><p>Pick the ones you want.</p></li>
-        <li><span class="num">2</span><h3>Check out below</h3><p>We prepare your files and email you a link to download.</p></li>
-      </ol>
     </section>
 
-    <!-- checkout is on this page (2026-11-28): the order, then Stripe's payment form in place of a separate page -->
+    <!-- checkout is on this page (2026-11-28): Stripe's payment form is simply there, for the picks or else the full set -->
     <section class="wrap co" id="checkout" aria-labelledby="co-title">
       <div class="co-card">
         <h2 id="co-title" tabindex="-1">Check out</h2>
+        <p class="co-send" id="co-send">We will prepare your files and email them to you.</p>
 
-        <div id="co-order">
-          <p class="co-empty" id="co-empty">Select videos above, or take them all.</p>
-          <ul class="co-lines" id="co-lines"></ul>
-          <div class="co-total" id="co-total"><span>Total</span><strong id="co-sum"></strong></div>
-          <p class="co-nudge" id="co-nudge" hidden></p>
-          <button type="button" class="btn co-pay" id="co-pay">Continue to payment</button>
-        </div>
-
+        <p class="co-empty" id="co-empty" hidden>Select videos above to check out.</p>
         <div class="co-head" id="co-head" hidden>
           <p><strong id="co-head-title"></strong> <span id="co-head-sum"></span></p>
-          <button type="button" class="linkbtn" id="co-change">Change order</button>
+          <p class="co-nudge" id="co-nudge"></p>
         </div>
-        <p class="co-status" id="co-status" role="status" hidden></p>
+        <p class="co-status" id="co-status" role="status" hidden>Loading secure payment…</p>
         <p class="co-error" id="co-error" role="alert" hidden></p>
+        <p class="co-retry" id="co-retry" hidden><button type="button" class="btn" id="co-retry-btn"></button></p>
         <div class="co-form" id="co-form"></div>
 
         <div class="w-thanks" id="co-done" role="status" hidden>
@@ -130,6 +121,6 @@
     </div>
   </div>
   <script src="player.js?v=1"></script>
-  <script src="watch.js?v=13"></script>
+  <script src="watch.js?v=14"></script>
 </body>
 </html>

@@ -9,8 +9,10 @@
 // Stripe Checkout session). Payment is Stripe's embedded form in the #checkout section at the bottom of this page.
 // After paying, pwGetOffer is called with the session id, the order is recorded (the Stripe webhook records it too),
 // and we render the videos and email the download link (they are not ready the moment the payment goes through).
-// A session's contents are fixed, so changing the order closes the form; Continue opens a new one.
-// If Stripe.js can't load, the buyer is sent to Stripe's own checkout page instead.
+// The form is simply there (no button to open it): it holds the picked videos, or the full set when nothing is picked.
+// It is made when the buyer scrolls near it, so a page that is only glanced at (or fetched by an email scanner) doesn't
+// create a Stripe session. A session's contents are fixed, so a change of order replaces the form.
+// If Stripe.js can't load, there is a button to Stripe's own checkout page instead.
 // Publishable key, safe in public code (same account as ProfilePilot's js/stripe-config.js).
 const STRIPE_KEY = 'pk_live_51U7g0q25dTAGrbc02SiAnZsrhQdT5MtBvNGjSqc8kuFYaMfkEh3REoXSWyzp7EYNjJ3fmz8gJVvPmohr1yYPpluC008ypv2MKo';
 const API = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/';
@@ -27,7 +29,9 @@ let data = null, pkgOn = false, pkgOffScreen = false, scrolled = false, coOnScre
 let wantSet = false;          // "get the set" was pressed
 let form = null;              // the mounted Stripe form
 let run = 0;                  // goes up whenever the form is closed, so a slow answer for an old order is dropped
-let busy = false, paidNow = false, stripeJs = null;
+let formKey = '';             // the order the form (shown or loading) is for
+let near = false, typed = false, paidNow = false, stripeJs = null, timer = 0;
+let opening = Promise.resolve();   // Stripe allows one form at a time, so they are made one after another
 
 // Firebase callable functions over plain fetch (no SDK needed): POST {data}, answer {result} or {error}.
 async function call(name, data) {
@@ -81,7 +85,7 @@ function render(d) {
     // one countdown, shown the same way everywhere there is a .clock (deal box, each video, the full set, the bar)
     const tick = () => {
       const ms = end - Date.now();
-      if (ms <= 0) { if (!form && !paidNow) location.reload(); return; }   // never wipe a card half typed in
+      if (ms <= 0) { if (!typed && !paidNow) location.reload(); return; }   // never wipe a card half typed in
       const s = Math.floor(ms / 1000), two = (n) => String(n).padStart(2, '0');
       const parts = [[Math.floor(s / 86400), 'days'], [two(Math.floor(s / 3600) % 24), 'hrs'], [two(Math.floor(s / 60) % 60), 'min'], [two(s % 60), 'sec']];
       const html = parts.map(([n, u]) => `<span><b>${n}</b><i>${u}</i></span>`).join('');
@@ -115,16 +119,15 @@ function render(d) {
     for (const v of list) $(box).appendChild(card(v, live, P));
   }
   if (countdown) countdown();
-  for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => { wantSet = true; checkout(); });
+  for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => { wantSet = true; goPay(); });
   for (const b of document.querySelectorAll('[data-pick]')) b.addEventListener('click', () => toggle(b));
-  $('bar-picks').addEventListener('click', () => { wantSet = false; checkout(); });
-  $('co-pay').addEventListener('click', () => checkout());
-  $('co-change').addEventListener('click', () => { closeForm(); summary(); $('co-title').focus({ preventScroll: true }); });
+  $('bar-picks').addEventListener('click', () => { wantSet = false; goPay(); });
+  // clicking into Stripe's frame is the only sign the page gets that someone started filling it in
+  addEventListener('blur', () => { if ($('co-form').contains(document.activeElement)) typed = true; });
 
   // nothing left to buy: no checkout section
   $('checkout').hidden = !unpaid.length;
   document.querySelector('.w-secure').hidden = !unpaid.length;
-  summary();
   new IntersectionObserver(([en]) => { coOnScreen = en.isIntersecting; bar(); }).observe($('checkout'));
 
   // the sticky bar: the picks and what the set would cost; with nothing picked, the set once they scroll, while its
@@ -133,6 +136,12 @@ function render(d) {
   if (pkgOn) new IntersectionObserver(([en]) => { pkgOffScreen = !en.isIntersecting; bar(); }).observe($('pkg'));
   if (pkgOn) addEventListener('scroll', () => { const s = scrollY > 200; if (s !== scrolled) { scrolled = s; bar(); } }, { passive: true });
   $('loading').hidden = true; $('app').hidden = false;
+
+  refresh();
+  if (unpaid.length) {
+    const io = new IntersectionObserver(([en]) => { if (en.isIntersecting) { io.disconnect(); near = true; refresh(); } }, { rootMargin: '900px 0px' });
+    io.observe($('checkout'));
+  }
 }
 
 function toggle(b) {
@@ -144,92 +153,94 @@ function toggle(b) {
   changed();
 }
 
-function changed() { closeForm(); summary(); bar(); }
+function changed() { refresh(); bar(); }
 
-// What would be bought now. When the picks cost as much as the set or more, it is the set (the server charges the set
-// price then too, so nobody pays more for fewer videos).
+// What the form is for: the picks, or the full set when it was asked for or nothing is picked. When the picks cost as
+// much as the set or more, it is the set (the server charges the set price then too, so nobody pays more for fewer videos).
 function order() {
   const P = data.offer.now, vids = data.videos, picks = vids.filter((v) => picked.has(v.id) && !v.paid);
-  const asSet = pkgOn && (wantSet || picks.length * P.single >= P.pkg);
-  const lines = asSet
-    ? [{ title: `All ${vids.length} commercials`, note: 'The full set', price: P.pkg }]
-    : picks.map((v) => ({ id: v.id, title: v.title || 'Commercial', note: v.shape === 'tall' ? 'Vertical 9:16' : 'Widescreen 16:9', price: P.single }));
-  return { asSet, picks, lines, total: lines.reduce((n, l) => n + Math.round(l.price * 100), 0) / 100 };
+  const asSet = pkgOn && (wantSet || !picks.length || picks.length * P.single >= P.pkg);
+  const count = asSet ? vids.length : picks.length;
+  const total = asSet ? P.pkg : Math.round(P.single * 100) * picks.length / 100;
+  const title = asSet ? `All ${count} commercials` : count === 1 ? picks[0].title || 'Commercial' : `${count} commercials`;
+  return { asSet, picks, count, total, title, key: asSet ? 'set' : picks.map((v) => v.id).join() };
 }
 
-// The order as listed in the checkout section. The set can be removed only when it was asked for by its button (picks
-// that add up to more than the set stay sold as the set).
-function summary() {
-  if (paidNow) return;
-  const P = data.offer.now, o = order(), n = o.lines.length, all = data.videos.length;
-  const canDrop = (l) => l.id || o.picks.length * P.single < P.pkg;
-  $('co-lines').innerHTML = o.lines.map((l) => `<li><span><b>${esc(l.title)}</b><i>${l.note}</i></span><em>${money(l.price)}</em>${
-    canDrop(l) ? `<button type="button" class="co-x" data-drop="${esc(l.id || '')}" aria-label="Remove ${esc(l.title)}">×</button>` : ''}</li>`).join('');
-  for (const x of $('co-lines').querySelectorAll('[data-drop]')) x.addEventListener('click', () => {
-    if (!x.dataset.drop) { wantSet = false; changed(); return; }
-    document.querySelector(`.pick[data-pick="${x.dataset.drop}"]`).click();
-  });
-  $('co-empty').hidden = !!n;
-  $('co-total').hidden = $('co-pay').hidden = !n;
-  $('co-sum').textContent = money(o.total);
-  const nudge = $('co-nudge');
-  nudge.hidden = !pkgOn || o.asSet;
-  if (!nudge.hidden) {
-    nudge.innerHTML = `<button type="button" class="linkbtn">Get all ${all} for ${money(P.pkg)}</button>${n ? ` (${money(P.pkg - o.total)} more)` : ''}`;
-    nudge.firstElementChild.addEventListener('click', () => { wantSet = true; checkout(); });
-  }
+// the line above the form: what it is for, and the other choice
+function heading(o) {
+  const P = data.offer.now, n = o.picks.length, mine = Math.round(P.single * 100) * n / 100;
+  $('co-empty').hidden = !!o.count;
+  $('co-head').hidden = !o.count;
+  if (!o.count) return;
+  $('co-head-title').textContent = o.title;
+  $('co-head-sum').textContent = money(o.total);
+  const nudge = $('co-nudge'), link = (text, set) => {
+    nudge.innerHTML = '<button type="button" class="linkbtn"></button>';
+    nudge.firstChild.textContent = text;
+    nudge.firstChild.addEventListener('click', () => { wantSet = set; changed(); });
+  };
+  nudge.textContent = '';
+  if (!pkgOn) return;
+  if (!o.asSet) { link(`Get all ${data.videos.length} for ${money(P.pkg)}`, true); nudge.append(` (${money(P.pkg - o.total)} more)`); }
+  else if (!n) nudge.textContent = 'Or select videos above to buy only those.';
+  else if (mine < P.pkg) link(`Buy only my ${n === 1 ? 'pick' : n + ' picks'} (${money(mine)})`, false);
+  else nudge.textContent = `Less than your ${n} picks cost one by one.`;
 }
 
 function closeForm() {
-  run++; busy = false;
+  run++; formKey = ''; typed = false;
+  clearTimeout(timer);
   if (form) { form.destroy(); form = null; }
   $('co-form').innerHTML = '';
-  $('co-head').hidden = $('co-status').hidden = $('co-error').hidden = true;
-  if (!paidNow) $('co-order').hidden = false;
+  $('co-status').hidden = $('co-error').hidden = $('co-retry').hidden = true;
+}
+
+// Brings the heading and the form in line with the order. The old form goes at once, so nobody can pay for an order
+// they have just changed; the new one waits a moment in case they are still picking.
+function refresh() {
+  if (paidNow) return;
+  const o = order();
+  heading(o);
+  if (o.key && o.key === formKey) return;
+  closeForm();
+  if (!o.count || !near) return;
+  const mine = run;
+  formKey = o.key;
+  $('co-status').hidden = false;
+  timer = setTimeout(() => { opening = opening.then(() => openForm(o, mine)).catch(() => {}); }, 600);
 }
 
 function stripe() {
   if (!stripeJs) stripeJs = new Promise((ok, no) => {
     const s = document.createElement('script');
     const fail = () => { stripeJs = null; s.remove(); no(new Error('Stripe.js did not load')); };
-    const timer = setTimeout(fail, 12000);
+    const limit = setTimeout(fail, 12000);
     s.src = 'https://js.stripe.com/v3/';
-    s.onload = () => { clearTimeout(timer); if (window.Stripe) ok(window.Stripe(STRIPE_KEY)); else fail(); };
-    s.onerror = () => { clearTimeout(timer); fail(); };
+    s.onload = () => { clearTimeout(limit); if (window.Stripe) ok(window.Stripe(STRIPE_KEY)); else fail(); };
+    s.onerror = () => { clearTimeout(limit); fail(); };
     document.head.appendChild(s);
   });
   return stripeJs;
 }
 
-const toCheckout = () => $('checkout').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-
-// Bring the checkout section into view and open Stripe's form there for the current order.
-async function checkout() {
-  if (paidNow || busy) return toCheckout();
-  closeForm(); summary(); bar();
-  const o = order();
-  toCheckout();
-  if (!o.lines.length) return;
-  const mine = run, what = o.asSet ? { item: 'package' } : { items: o.picks.map((v) => v.id) };
-  busy = true;
-  $('co-order').hidden = true;
-  $('co-head').hidden = false;
-  $('co-head-title').textContent = o.lines.length === 1 ? o.lines[0].title : `${o.lines.length} commercials`;
-  $('co-head-sum').textContent = money(o.total);
-  $('co-status').textContent = 'Opening secure payment…';
-  $('co-status').hidden = false;
-  const failed = (e) => {
+async function openForm(o, mine) {
+  if (mine !== run) return;
+  const what = o.asSet ? { item: 'package' } : { items: o.picks.map((v) => v.id) };
+  const failed = (message, label, again) => {
     if (mine !== run) return;
-    closeForm(); summary();
-    $('co-error').textContent = e.message || 'Checkout didn\'t open. Please try again.';
-    $('co-error').hidden = false;
+    closeForm();
+    $('co-error').textContent = message;
+    $('co-error').hidden = $('co-retry').hidden = false;
+    $('co-retry-btn').textContent = label;
+    $('co-retry-btn').onclick = again;
   };
+  const retry = (e) => failed(e.message || 'Checkout didn\'t open. Please try again.', 'Try again', refresh);
   let js;
   try { js = await stripe(); }
-  catch (e) {   // the form can't load here: use Stripe's own checkout page
-    if (mine !== run) return;
-    try { const r = await call('pwCheckout', { token, ...what }); if (mine === run) location.href = r.url; } catch (err) { failed(err); }
-    return;
+  catch (e) {   // the form can't load here: offer Stripe's own checkout page
+    return failed('The payment form couldn\'t load here.', 'Pay on Stripe\'s secure page', async () => {
+      try { location.href = (await call('pwCheckout', { token, ...what })).url; } catch (err) { retry(err); }
+    });
   }
   try {
     const r = await call('pwCheckout', { token, ...what, embedded: true });
@@ -238,9 +249,16 @@ async function checkout() {
     if (mine !== run) return made.destroy();   // the order changed while it was loading
     form = made;
     form.mount('#co-form');
-    busy = false;
     $('co-status').hidden = true;
-  } catch (e) { failed(e); }
+  } catch (e) { retry(e); }
+}
+
+const toCheckout = () => $('checkout').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+
+// the "get the set" and "buy these" buttons: set the order and take them to the form
+function goPay() {
+  if (!paidNow) { near = true; changed(); }
+  toCheckout();
 }
 
 // Paid, without leaving the page: thank them here, mark what they bought, and record the order.
@@ -248,7 +266,7 @@ async function done(id, o) {
   paidNow = true;
   const bought = new Set(o.asSet ? data.videos.map((v) => v.id) : o.picks.map((v) => v.id));
   closeForm();
-  $('co-order').hidden = $('co-note').hidden = $('co-title').hidden = true;
+  $('co-head').hidden = $('co-empty').hidden = $('co-note').hidden = $('co-title').hidden = $('co-send').hidden = true;
   $('co-done').hidden = false;
   for (const v of data.videos) {
     if (!bought.has(v.id)) continue;
