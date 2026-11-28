@@ -370,6 +370,30 @@ async function paintProspect(id) {
   on(body, '[data-log]', (b) => confirm(`Record that you contacted them (${b.dataset.log})?`) && act(b, () => api('logTouch', { id, how: b.dataset.log }), 'Recorded.').then((r) => r && again()));
 }
 
+// ---------------------------------------------------------------- lead data
+const STEPS = [['website', 'Website reading'], ['summary', 'Website summaries'], ['contact', 'Contact search'], ['logo', 'Logo check'], ['name', 'Name check']];
+const tradeName = (t) => { const s = String(t || 'other').replace(/^winter:/, '').replace(/-/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); };
+views.leads = async (el) => {
+  const { leads: d } = await api('leadStats');
+  if (!d) { el.innerHTML = '<h1>Lead data</h1><div class="card"><p class="empty">The factory PC hasn't reported yet.</p></div>'; return; }
+  const n = (v) => Number(v || 0).toLocaleString('en-US');
+  const sum = (k) => d.trades.reduce((a, t) => a + Number(t[k] || 0), 0);
+  const rows = (list) => list.map(([k, label]) => `<tr><td>${label}</td>${d.trades.map((t) => `<td>${n(t[k])}</td>`).join('')}<td><b>${n(sum(k))}</b></td></tr>`).join('');
+  const table = (title, list) => `<div class="card"><h2>${title}</h2><div class="scroll"><table><thead><tr><th></th>${d.trades.map((t) => `<th>${esc(tradeName(t.trade))}</th>`).join('')}<th>All</th></tr></thead><tbody>${rows(list)}</tbody></table></div></div>`;
+  const waits = { website: 'notRead', summary: 'waitingSummary', contact: 'waitingContact', logo: 'waitingLogo', name: 'waitingName' };
+  el.innerHTML = `<h1>Lead data</h1>
+    <p class="soft">Single-location businesses. The factory PC works through what is waiting every hour, a limited batch at a time, at no cost. Pausing the factory pauses this too.</p>
+    ${(d.notes || []).map((x) => `<p class="warn">${esc(x)}</p>`).join('')}
+    <div class="card"><div class="row"><div class="grow"><b>${d.running ? `Working now: ${esc((STEPS.find((s) => s[0] === d.running) || [0, d.running])[1])}` : 'Waiting for the next run'}</b><br>
+      <span class="small soft">Updated ${when(d.at)} · ${n(d.freeMB)} MB of disk free on the PC</span></div><button class="btn ghost" id="reload">Refresh</button></div>
+      <div class="scroll"><table><thead><tr><th>Step</th><th>Waiting</th><th>Done today</th><th>Daily limit</th><th>Last run</th></tr></thead><tbody>
+      ${STEPS.map(([k, label]) => { const s = (d.stages || {})[k]; return `<tr><td>${label}</td><td>${n(sum(waits[k]))}</td><td>${n((d.today || {})[k])}</td><td>${n(d.caps[k].day)}</td><td class="small">${s ? `${esc(s.text)}<br><span class="soft">${when(s.at)}</span>` : 'not run yet'}</td></tr>`; }).join('')}
+      </tbody></table></div><p class="small soft">"Done today" counts what each run was given to work on.</p></div>
+    ${table('Ready to make a commercial', [['ready', 'Logo works'], ['goodName', 'and the name is fine to say'], ['riskyName', 'name flagged as risky'], ['waitingName', 'name not checked yet'], ['readyEmail', 'Has an email'], ['readyForm', 'No email, contact page or form'], ['best', 'Fine name and an email']])}
+    ${table('How far each business has got', [['total', 'Total'], ['notRead', 'Website not read yet'], ['waitingSummary', 'Waiting to be summarised'], ['summarised', 'Summarised'], ['unreachable', 'Website didn't load'], ['noText', 'Website had almost no text'], ['waitingContact', 'Waiting for the contact search']])}`;
+  $('#reload', el).onclick = () => draw(false);
+};
+
 // ---------------------------------------------------------------- factory
 const openLogs = new Set();
 views.factory = async (el) => {
